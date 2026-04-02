@@ -97,6 +97,35 @@ VARIABLES_DISPONIBLES = {
     'ubicacion_evento':  'Ubicación del evento',
 }
 
+# Via de ingreso es ManyToMany; no se puede cruzar con .values() simple.
+# El cruce (barras agrupadas) solo funciona con las 8 variables FK simples.
+VARIABLES_CRUZABLES = {k: v for k, v in VARIABLES_DISPONIBLES.items()
+                       if k != 'via_ingreso'}
+
+# Mapa de clave de variable → campo ORM para usar en .values()
+_CAMPO_ORM = {
+    'tipo_agente':      'tipo_agente__nombre',
+    'circunstancia':    'circunstancia_nivel1__nombre',
+    'severidad':        'severidad__nombre',
+    'sexo':             'sexo__nombre',
+    'motivo_consulta':  'motivo_consulta__nombre',
+    'evolucion':        'evolucion__nombre',
+    'tipo_contacto':    'tipo_contacto__nombre',
+    'ubicacion_evento': 'ubicacion_evento__nombre',
+}
+
+# Mapa de clave de variable → campo FK del modelo (para exclude isnull)
+_CAMPO_FK = {
+    'tipo_agente':      'tipo_agente',
+    'circunstancia':    'circunstancia_nivel1',
+    'severidad':        'severidad',
+    'sexo':             'sexo',
+    'motivo_consulta':  'motivo_consulta',
+    'evolucion':        'evolucion',
+    'tipo_contacto':    'tipo_contacto',
+    'ubicacion_evento': 'ubicacion_evento',
+}
+
 
 def conteos_por_variable(qs, variable):
     """
@@ -316,6 +345,179 @@ def grafica_linea_temporal(qs, titulo='Casos por mes'):
     fig.tight_layout()
 
     return _fig_a_base64(fig)
+
+
+# ─── Cruce de dos variables (RF-22 / RF-24) ─────────────────────────────────
+
+def conteos_cruzados(qs, variable_x, variable_grupo):
+    """
+    Cruza dos variables categóricas en el queryset.
+    Devuelve un dict anidado: {cat_x: {cat_grupo: conteo}}.
+
+    Solo funciona con variables de VARIABLES_CRUZABLES (ForeignKey simples).
+    Ejemplo: variable_x='tipo_agente', variable_grupo='sexo'
+    →  {'Medicamentos': {'Masculino': 10, 'Femenino': 8}, ...}
+    """
+    from django.db.models import Count
+
+    if variable_x not in _CAMPO_ORM or variable_grupo not in _CAMPO_ORM:
+        return {}
+
+    campo_x = _CAMPO_ORM[variable_x]
+    campo_g = _CAMPO_ORM[variable_grupo]
+    fk_x    = _CAMPO_FK[variable_x]
+    fk_g    = _CAMPO_FK[variable_grupo]
+
+    datos = (
+        qs
+        .exclude(**{fk_x + '__isnull': True})
+        .exclude(**{fk_g + '__isnull': True})
+        .values(campo_x, campo_g)
+        .annotate(total=Count('id'))
+    )
+
+    resultado = {}
+    for d in datos:
+        cat_x = d[campo_x] or '(sin dato)'
+        cat_g = d[campo_g] or '(sin dato)'
+        if cat_x not in resultado:
+            resultado[cat_x] = {}
+        resultado[cat_x][cat_g] = d['total']
+
+    return resultado
+
+
+def tabla_cruzada(cruzado):
+    """
+    Convierte el dict {cat_x: {cat_grupo: conteo}} a una estructura
+    lista-de-filas + lista-de-encabezados para renderizar en la plantilla.
+
+    Devuelve:
+        grupos  — list de nombres de columnas del grupo
+        filas   — list de dicts {etiqueta, valores: [int...], total: int}
+    """
+    if not cruzado:
+        return [], []
+
+    # Recopilar todos los valores del grupo para los encabezados de columna
+    grupos = sorted({g for cats in cruzado.values() for g in cats.keys()})
+
+    # Ordenar filas de mayor a menor total
+    filas = []
+    for cat_x, desglose in sorted(
+        cruzado.items(), key=lambda kv: -sum(kv[1].values())
+    ):
+        filas.append({
+            'etiqueta': cat_x,
+            'valores':  [desglose.get(g, 0) for g in grupos],
+            'total':    sum(desglose.values()),
+        })
+
+    return grupos, filas
+
+
+# ─── Gráfica de barras agrupadas (RF-23) ─────────────────────────────────────
+
+def grafica_barras_agrupadas(cruzado, titulo_x, titulo_grupo, titulo='', max_cats=10):
+    """
+    Genera barras agrupadas para cruzar dos variables (RF-23).
+
+    - Eje X: categorías de variable_x (las N más frecuentes).
+    - Grupos de barras por colores: categorías de variable_grupo.
+
+    Ejemplo: circunstancia × sexo → barras de hombres/mujeres por circunstancia.
+    """
+    import numpy as np
+
+    if not cruzado:
+        return None
+
+    # Recopilar grupos (colores) y categorías del eje X
+    grupos = sorted({g for cats in cruzado.values() for g in cats.keys()})
+    # Tomar las max_cats categorías del eje X con más casos totales
+    cats_x = sorted(
+        cruzado.keys(),
+        key=lambda k: -sum(cruzado[k].values())
+    )[:max_cats]
+
+    n_cats  = len(cats_x)
+    n_grups = len(grupos)
+    if n_cats == 0 or n_grups == 0:
+        return None
+
+    ancho_barra = 0.75 / n_grups   # todas las barras de un grupo caben en 0.75
+    x = np.arange(n_cats)
+
+    fig, ax = plt.subplots(figsize=(max(9, n_cats * 0.9), 5))
+
+    for i, grupo in enumerate(grupos):
+        valores = [cruzado[cat].get(grupo, 0) for cat in cats_x]
+        offset  = (i - n_grups / 2 + 0.5) * ancho_barra
+        ax.bar(x + offset, valores, ancho_barra * 0.92,
+               label=_truncar(grupo, 20),
+               color=COLORES[i % len(COLORES)],
+               edgecolor='white')
+
+    etiquetas_x = [_truncar(k, 18) for k in cats_x]
+    ax.set_xticks(x)
+    ax.set_xticklabels(etiquetas_x, rotation=35, ha='right', fontsize=8)
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    ax.set_title(titulo or f'{titulo_x} por {titulo_grupo}',
+                 pad=12, fontweight='bold')
+    ax.set_ylabel('Número de casos')
+    ax.legend(
+        title=titulo_grupo,
+        bbox_to_anchor=(1.02, 1),
+        loc='upper left',
+        fontsize=8,
+        title_fontsize=8,
+    )
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    fig.tight_layout()
+
+    return _fig_a_base64(fig)
+
+
+def grafica_barras_agrupadas_bytes(cruzado, titulo_x, titulo_grupo,
+                                   titulo='', max_cats=10):
+    """Igual que grafica_barras_agrupadas pero devuelve bytes PNG para descarga."""
+    import numpy as np
+
+    if not cruzado:
+        return None
+
+    grupos = sorted({g for cats in cruzado.values() for g in cats.keys()})
+    cats_x = sorted(cruzado.keys(), key=lambda k: -sum(cruzado[k].values()))[:max_cats]
+    n_cats  = len(cats_x)
+    n_grups = len(grupos)
+    if n_cats == 0 or n_grups == 0:
+        return None
+
+    ancho_barra = 0.75 / n_grups
+    x = np.arange(n_cats)
+
+    fig, ax = plt.subplots(figsize=(max(9, n_cats * 0.9), 5))
+    for i, grupo in enumerate(grupos):
+        valores = [cruzado[cat].get(grupo, 0) for cat in cats_x]
+        offset  = (i - n_grups / 2 + 0.5) * ancho_barra
+        ax.bar(x + offset, valores, ancho_barra * 0.92,
+               label=_truncar(grupo, 20),
+               color=COLORES[i % len(COLORES)],
+               edgecolor='white')
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([_truncar(k, 18) for k in cats_x],
+                       rotation=35, ha='right', fontsize=8)
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+    ax.set_title(titulo or f'{titulo_x} por {titulo_grupo}', pad=12, fontweight='bold')
+    ax.set_ylabel('Número de casos')
+    ax.legend(title=titulo_grupo, bbox_to_anchor=(1.02, 1), loc='upper left',
+              fontsize=8, title_fontsize=8)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    fig.tight_layout()
+    return _fig_a_bytes(fig)
 
 
 def grafica_linea_temporal_bytes(qs, titulo='Casos por mes'):

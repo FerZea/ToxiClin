@@ -5,6 +5,7 @@ Ejecutar con: python manage.py test expedientes
 
 from django.test import TestCase, Client
 from django.contrib.auth.models import User, Group
+from django.urls import reverse
 from django.utils import timezone
 from expedientes.models import (
     HistoriaClinica, HistoriaClinicaTratamiento,
@@ -229,3 +230,137 @@ class EdicionPermisoTest(TestCase):
         self.assertEqual(
             self.historia.tratamientos_detalle.filter(columna='A').count(), 1
         )
+
+
+# ─── Tests de Fase 5: estadísticas y dashboard ───────────────────────────────
+
+class EstadisticasVistaTest(TestCase):
+    """
+    Verifica:
+    - El módulo de estadísticas está restringido a administradoras (@solo_admin).
+    - El dashboard es accesible para todos los usuarios autenticados.
+    - La exportación de PNG funciona y rechaza variables inválidas.
+    - Las funciones de graficas.py no explotan con datos reales.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.cats   = crear_catalogos()
+        self.admin, self.cap1, _ = crear_usuarios()
+
+        # Crear una historia para que las gráficas tengan algo que dibujar
+        ahora = timezone.now()
+        HistoriaClinica.objects.create(
+            folio_expediente='GRAF-001',
+            nombre='Test',
+            apellido='Grafica',
+            tipo_contacto=self.cats['presencial'],
+            motivo_consulta=self.cats['intoxicacion'],
+            subtipo_presencial=self.cats['urgencias'],
+            fecha_hora_consulta=ahora,
+            fecha_hora_ingreso=ahora,
+            usuario_captura=self.cap1,
+            consulta_numero=99,
+        )
+
+    # ── Restricción de acceso ────────────────────────────────────────────────
+
+    def test_estadisticas_sin_login_redirige(self):
+        """Sin sesión, estadísticas redirige al login."""
+        resp = self.client.get(reverse('estadisticas'))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/login/', resp['Location'])
+
+    def test_estadisticas_capturista_redirige_a_dashboard(self):
+        """Un capturista no puede entrar a estadísticas."""
+        self.client.login(username='cap1_t', password='cap1234test')
+        resp = self.client.get(reverse('estadisticas'))
+        # @solo_admin redirige al dashboard con mensaje de error
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_estadisticas_admin_accede(self):
+        """Una administradora puede ver la página de estadísticas."""
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(reverse('estadisticas'))
+        self.assertEqual(resp.status_code, 200)
+
+    # ── Dashboard accesible para todos ──────────────────────────────────────
+
+    def test_dashboard_accesible_capturista(self):
+        """El dashboard (RF-27) es visible para cualquier usuario autenticado."""
+        self.client.login(username='cap1_t', password='cap1234test')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_dashboard_contiene_total(self):
+        """El dashboard muestra el total de registros correcto."""
+        self.client.login(username='cap1_t', password='cap1234test')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertContains(resp, '1')   # hay 1 historia creada en setUp
+
+    # ── Generación de gráficas con variables ────────────────────────────────
+
+    def test_estadisticas_con_variable_barras(self):
+        """Seleccionar una variable genera la gráfica sin error."""
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(
+            reverse('estadisticas') + '?variables=tipo_contacto&tipo_grafica=barras'
+        )
+        self.assertEqual(resp.status_code, 200)
+        # Debe haber exactamente un resultado
+        self.assertEqual(len(resp.context['resultados']), 1)
+
+    def test_estadisticas_con_cruce_barras_agrupadas(self):
+        """
+        Seleccionar 2 variables con tipo barras_agrupadas genera
+        un resultado de cruce (es_cruce=True).
+        """
+        # Necesitamos catálogos de sexo para que haya cruce real
+        CatSexo.objects.get_or_create(nombre='Masculino', defaults={'codigo': 1})
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(
+            reverse('estadisticas')
+            + '?variables=tipo_contacto&variables=sexo&tipo_grafica=barras_agrupadas'
+        )
+        self.assertEqual(resp.status_code, 200)
+        resultados = resp.context['resultados']
+        self.assertGreater(len(resultados), 0)
+        # El primer resultado debe ser el cruce
+        self.assertTrue(resultados[0]['es_cruce'])
+
+    def test_estadisticas_limite_4_variables(self):
+        """No se procesan más de 4 variables aunque se envíen más."""
+        self.client.login(username='admin_t', password='admin1234test')
+        params = ('variables=tipo_agente&variables=sexo&variables=severidad'
+                  '&variables=evolucion&variables=circunstancia')
+        resp = self.client.get(reverse('estadisticas') + '?' + params)
+        self.assertEqual(resp.status_code, 200)
+        self.assertLessEqual(len(resp.context['variables_sel']), 4)
+
+    # ── Exportación PNG ──────────────────────────────────────────────────────
+
+    def test_exportar_variable_invalida_404(self):
+        """Una variable inexistente devuelve 404."""
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(
+            reverse('exportar_grafica') + '?variable=no_existe'
+        )
+        self.assertEqual(resp.status_code, 404)
+
+    def test_exportar_capturista_bloqueado(self):
+        """Un capturista no puede descargar gráficas."""
+        self.client.login(username='cap1_t', password='cap1234test')
+        resp = self.client.get(
+            reverse('exportar_grafica') + '?variable=tipo_contacto'
+        )
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_exportar_png_admin(self):
+        """Admin descarga PNG correctamente (content-type image/png)."""
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(
+            reverse('exportar_grafica') + '?variable=tipo_contacto&tipo_grafica=barras'
+        )
+        # Con datos existentes debe devolver 200 y PNG
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'image/png')

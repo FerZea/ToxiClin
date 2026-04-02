@@ -24,7 +24,7 @@
                 </select>
             </div>
 
-            {# Fechas del rango personalizado — se muestran solo si periodo=rango #}
+            {# Fechas del rango personalizado #}
             <div class="campo-grupo campo-angosto" id="bloque-fecha-desde"
                  style="{% if periodo_sel != 'rango' %}display:none{% endif %}">
                 <label for="id_fecha_desde">Desde</label>
@@ -41,21 +41,28 @@
             {# Tipo de gráfica #}
             <div class="campo-grupo">
                 <label for="id_tipo_grafica"><strong>Tipo de gráfica</strong></label>
-                <select name="tipo_grafica" id="id_tipo_grafica">
+                <select name="tipo_grafica" id="id_tipo_grafica"
+                        onchange="actualizarNotaAgrupadas()">
                     {% for val, etiq in tipos_grafica %}
                     <option value="{{ val }}" {% if val == tipo_sel %}selected{% endif %}>
                         {{ etiq }}
                     </option>
                     {% endfor %}
                 </select>
+                {# Nota visible solo cuando se elige "barras agrupadas" #}
+                <small id="nota-agrupadas" class="texto-secundario"
+                       style="{% if tipo_sel != 'barras_agrupadas' %}display:none{% endif %}">
+                    Requiere <strong>al menos 2 variables</strong> (sin Vía de ingreso para el cruce).
+                    Las primeras 2 se cruzarán; las demás se grafican por separado.
+                </small>
             </div>
         </div>
 
-        {# Variables (RF-22): hasta 4, con checkboxes #}
+        {# Variables (RF-22): hasta 4 #}
         <div class="filtros-fila">
             <div class="campo-grupo campo-ancho">
                 <label><strong>Variables a graficar</strong>
-                    <small class="texto-secundario">(selecciona hasta 4)</small>
+                    <small class="texto-secundario">(hasta 4)</small>
                 </label>
                 <div class="variables-grid">
                     {% for clave, etiqueta in variables_disp.items %}
@@ -64,6 +71,9 @@
                                {% if clave in variables_sel %}checked{% endif %}
                                onchange="limitarVariables()">
                         {{ etiqueta }}
+                        {% if clave not in variables_cruzables %}
+                        <small class="texto-secundario">(solo individual)</small>
+                        {% endif %}
                     </label>
                     {% endfor %}
                 </div>
@@ -91,7 +101,7 @@
 </div>
 {% endif %}
 
-{# ── Resultados: una tarjeta por variable ────────────────────────────────── #}
+{# ── Resultados: una tarjeta por gráfica generada ────────────────────────── #}
 {% if resultados %}
     {% for r in resultados %}
     <div class="estadistica-tarjeta">
@@ -100,7 +110,7 @@
             <h3>{{ r.titulo }}</h3>
             <div class="estadistica-acciones">
                 {# Botón de descarga PNG (RF-26) #}
-                <a href="{% url 'exportar_grafica' %}?variable={{ r.variable }}&periodo={{ periodo_sel }}&tipo_grafica={{ tipo_sel }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+                <a href="{% url 'exportar_grafica' %}?{{ r.exportar_vars }}&periodo={{ periodo_sel }}&tipo_grafica={{ tipo_sel }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
                    class="btn-tabla" title="Descargar como PNG">
                     ↓ PNG
                 </a>
@@ -117,13 +127,13 @@
                      class="grafica-img">
             </div>
             {% else %}
-            <div class="sin-resultados">
-                <p>No hay datos suficientes para generar esta gráfica.</p>
+            <div class="sin-resultados" style="flex:1">
+                <p>No hay datos suficientes para esta gráfica.</p>
             </div>
             {% endif %}
 
-            {# Tabla de frecuencias #}
-            {% if r.tabla %}
+            {# Tabla de frecuencias simple (gráficas individuales) #}
+            {% if not r.es_cruce and r.tabla %}
             <div class="estadistica-tabla">
                 <table class="tabla tabla-frecuencias">
                     <thead>
@@ -154,6 +164,49 @@
             {% endif %}
 
         </div>
+
+        {# Tabla cruzada (barras agrupadas, RF-24) #}
+        {% if r.es_cruce and r.filas_cruce %}
+        <div class="estadistica-tabla-cruzada">
+            <p class="texto-secundario" style="margin-bottom:0.4rem">
+                <strong>Tabla cruzada</strong>
+            </p>
+            <div style="overflow-x:auto">
+                <table class="tabla tabla-frecuencias">
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            {% for g in r.grupos_cruce %}
+                            <th>{{ g }}</th>
+                            {% endfor %}
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fila in r.filas_cruce %}
+                        <tr>
+                            <td>{{ fila.etiqueta }}</td>
+                            {% for val in fila.valores %}
+                            <td>{{ val }}</td>
+                            {% endfor %}
+                            <td><strong>{{ fila.total }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            {% for g in r.grupos_cruce %}
+                            <td>—</td>
+                            {% endfor %}
+                            <td><strong>{{ r.total }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
     {% endfor %}
 
@@ -174,7 +227,6 @@
 {% block scripts_extra %}
 {% load static %}
 <script>
-/* Muestra/oculta los campos de rango personalizado según el período seleccionado */
 function toggleRango() {
     const periodo = document.getElementById('id_periodo').value;
     const mostrar = periodo === 'rango';
@@ -182,22 +234,26 @@ function toggleRango() {
     document.getElementById('bloque-fecha-hasta').style.display = mostrar ? '' : 'none';
 }
 
+function actualizarNotaAgrupadas() {
+    const tipo = document.getElementById('id_tipo_grafica').value;
+    document.getElementById('nota-agrupadas').style.display =
+        tipo === 'barras_agrupadas' ? '' : 'none';
+}
+
 /* Impide marcar más de 4 variables a la vez */
 function limitarVariables() {
     const checks = document.querySelectorAll('input[name="variables"]');
     const marcados = Array.from(checks).filter(c => c.checked);
     if (marcados.length >= 4) {
-        checks.forEach(c => {
-            if (!c.checked) c.disabled = true;
-        });
+        checks.forEach(c => { if (!c.checked) c.disabled = true; });
     } else {
         checks.forEach(c => c.disabled = false);
     }
 }
 
-/* Inicializar al cargar la página */
 document.addEventListener('DOMContentLoaded', function () {
     toggleRango();
+    actualizarNotaAgrupadas();
     limitarVariables();
 });
 </script>
