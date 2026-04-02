@@ -1,0 +1,306 @@
+/* ============================================================
+   ToxiClin — Estilos base
+   Sistema de Gestión de Expedientes Clínicos Toxicológicos
+   CIAT — Hospital Central "Dr. Ignacio Morones Prieto"
+   ============================================================ */
+
+/* --- Reset básico --- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    color: #222;
+    background-color: #f5f6fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Navbar --- */
+.navbar {
+    background-color: #1a3a5c;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1.5rem;
+    gap: 1.5rem;
+}
+
+.navbar-marca strong {
+    font-size: 1.2rem;
+    color: #7ecfff;
+}
+
+.navbar-subtitulo {
+    font-size: 0.8rem;
+    color: #aac8e0;
+    margin-left: 0.5rem;
+}
+
+.navbar-menu {
+    list-style: none;
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    margin-left: 1rem;
+}
+
+.navbar-menu a {
+    color: #cde0f0;
+    text-decoration: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.navbar-menu a:hover {
+    background-color: #2a5a8c;
+    color: white;
+}
+
+.navbar-usuario {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: #aac8e0;
+}
+
+.btn-salir {
+    background-color: #c0392b;
+    color: white !important;
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.btn-salir:hover {
+    background-color: #e74c3c;
+}
+
+/* --- Contenido principal --- */
+.contenido-principal {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* --- Mensajes flash --- */
+.mensajes {
+    margin-bottom: 1rem;
+}
+
+.mensaje {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.mensaje-success, .mensaje-info {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.mensaje-error, .mensaje-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.mensaje-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* --- Login --- */
+.login-contenedor {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+}
+
+.login-caja {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    width: 100%;
+    max-width: 380px;
+}
+
+.login-titulo {
+    text-align: center;
+    color: #1a3a5c;
+    font-size: 2rem;
+    margin-bottom: 0.3rem;
+}
+
+.login-subtitulo {
+    text-align: center;
+    color: #666;
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+}
+
+.campo-grupo {
+    margin-bottom: 1rem;
+}
+
+.campo-grupo label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.3rem;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.campo-grupo input,
+.campo-grupo select,
+.campo-grupo textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.campo-grupo input:focus,
+.campo-grupo select:focus,
+.campo-grupo textarea:focus {
+    outline: none;
+    border-color: #1a3a5c;
+    box-shadow: 0 0 0 2px rgba(26,58,92,0.15);
+}
+
+.error-login {
+    color: #c0392b;
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+
+.login-nota {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: #888;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* --- Botones --- */
+.btn-primario {
+    background-color: #1a3a5c;
+    color: white;
+    border: none;
+    padding: 0.55rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primario:hover {
+    background-color: #2a5a8c;
+}
+
+.btn-secundario {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.55rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-secundario:hover {
+    background-color: #5a6268;
+}
+
+.btn-completo {
+    width: 100%;
+    text-align: center;
+    padding: 0.65rem;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* --- Dashboard --- */
+.dashboard h2 {
+    color: #1a3a5c;
+    margin-bottom: 0.3rem;
+}
+
+.texto-secundario {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.tarjetas-resumen {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.tarjeta {
+    background: white;
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    min-width: 180px;
+    text-align: center;
+}
+
+.tarjeta-numero {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1a3a5c;
+}
+
+.tarjeta-etiqueta {
+    display: block;
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.3rem;
+}
+
+.acciones-rapidas {
+    margin-top: 1rem;
+}
+
+.acciones-rapidas h3 {
+    margin-bottom: 0.75rem;
+    color: #333;
+}
+
+.acciones-rapidas a {
+    margin-right: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+/* --- Pie de página --- */
+.pie-pagina {
+    text-align: center;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    color: #888;
+    background: #eef0f5;
+    border-top: 1px solid #ddd;
+}

@@ -1,0 +1,19 @@
+# ToxiClin — Dependencias del proyecto
+# Instalar con: pip install -r requirements.txt
+
+# Framework web
+Django==5.1.5
+
+# Servidor WSGI para Windows en producción local
+waitress==3.0.1
+
+# Gráficas estadísticas
+matplotlib==3.9.4
+plotly==5.24.1
+
+# Migración desde Excel
+pandas==2.2.3
+openpyxl==3.1.5
+
+# Cifrado de respaldos (AES-256 via Fernet)
+cryptography==44.0.0
