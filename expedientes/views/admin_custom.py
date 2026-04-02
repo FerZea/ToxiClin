@@ -65,11 +65,7 @@ def crear_usuario(request):
         )
         grupo = Group.objects.get(pk=grupo_id)
         user.groups.add(grupo)
-
-        # Si es Administrador, darle acceso al admin de Django también
-        if grupo.name == 'Administrador':
-            user.is_staff = True
-            user.save()
+        # is_staff=False para todos — el admin de Django es solo para el superusuario técnico
 
         messages.success(request, f'Usuario "{username}" creado correctamente con rol {grupo.name}.')
         return redirect('lista_usuarios')
@@ -99,7 +95,7 @@ def editar_usuario(request, user_id):
         if grupo_id:
             grupo = Group.objects.get(pk=grupo_id)
             usuario.groups.add(grupo)
-            usuario.is_staff = (grupo.name == 'Administrador')
+        # is_staff siempre False — admin Django solo para superusuario
 
         usuario.is_active = activo
         usuario.save()
