@@ -11,9 +11,17 @@ en el servidor sin monitor ni entorno gráfico.
 """
 
 import io
+import os
 import base64
+from pathlib import Path
 from collections import Counter
 from django.utils import timezone
+
+# Fijar una carpeta de caché writable para matplotlib dentro del proyecto.
+# Evita warnings en entornos donde ~/.config/matplotlib no es escribible.
+MPLCONFIGDIR = Path(__file__).resolve().parent.parent / '.matplotlib'
+MPLCONFIGDIR.mkdir(exist_ok=True)
+os.environ.setdefault('MPLCONFIGDIR', str(MPLCONFIGDIR))
 
 # Configurar matplotlib para modo servidor (sin GUI)
 import matplotlib
@@ -49,10 +57,13 @@ def _fig_a_base64(fig):
     return imagen_b64
 
 
-def _fig_a_bytes(fig):
-    """Convierte una figura matplotlib a bytes PNG para descarga."""
+def _fig_a_bytes(fig, formato='png'):
+    """Convierte una figura matplotlib a bytes PNG/JPG para descarga."""
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
+    if formato == 'jpg':
+        fig.savefig(buf, format='jpeg', bbox_inches='tight', dpi=150)
+    else:
+        fig.savefig(buf, format='png', bbox_inches='tight', dpi=150)
     buf.seek(0)
     datos = buf.read()
     plt.close(fig)
@@ -87,6 +98,7 @@ def _truncar(texto, max_chars=25):
 
 VARIABLES_DISPONIBLES = {
     'tipo_agente':       'Tipo de agente',
+    'edad_rango':        'Edad (rangos)',
     'circunstancia':     'Circunstancia (Nivel 1)',
     'severidad':         'Severidad',
     'sexo':              'Sexo',
@@ -127,6 +139,34 @@ _CAMPO_FK = {
 }
 
 
+def _etiqueta_edad_rango(edad_valor, edad_unidad):
+    """
+    Convierte la edad almacenada (días/meses/años) a un rango clínico legible.
+    """
+    if edad_valor is None or not edad_unidad:
+        return None
+
+    if edad_unidad in ('d', 'm'):
+        return '<1 año'
+
+    if edad_unidad != 'a':
+        return None
+
+    if edad_valor < 1:
+        return '<1 año'
+    if edad_valor <= 4:
+        return '1-4 años'
+    if edad_valor <= 14:
+        return '5-14 años'
+    if edad_valor <= 24:
+        return '15-24 años'
+    if edad_valor <= 44:
+        return '25-44 años'
+    if edad_valor <= 64:
+        return '45-64 años'
+    return '65+ años'
+
+
 def conteos_por_variable(qs, variable):
     """
     Devuelve un dict {nombre_opción: conteo} para la variable seleccionada.
@@ -135,6 +175,13 @@ def conteos_por_variable(qs, variable):
         datos = qs.exclude(tipo_agente__isnull=True).values_list(
             'tipo_agente__nombre', flat=True
         )
+    elif variable == 'edad_rango':
+        datos = [
+            etiqueta
+            for edad_valor, edad_unidad in qs.values_list('edad_valor', 'edad_unidad')
+            for etiqueta in [_etiqueta_edad_rango(edad_valor, edad_unidad)]
+            if etiqueta
+        ]
     elif variable == 'circunstancia':
         datos = qs.exclude(circunstancia_nivel1__isnull=True).values_list(
             'circunstancia_nivel1__nombre', flat=True
@@ -208,7 +255,7 @@ def grafica_barras(conteos, titulo, max_barras=15):
     return _fig_a_base64(fig)
 
 
-def grafica_barras_bytes(conteos, titulo, max_barras=15):
+def grafica_barras_bytes(conteos, titulo, max_barras=15, formato='png'):
     if not conteos:
         return None
     items = sorted(conteos.items(), key=lambda x: x[1], reverse=True)[:max_barras]
@@ -226,7 +273,7 @@ def grafica_barras_bytes(conteos, titulo, max_barras=15):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     fig.tight_layout()
-    return _fig_a_bytes(fig)
+    return _fig_a_bytes(fig, formato=formato)
 
 
 # ─── Gráfica de pastel ───────────────────────────────────────────────────────
@@ -277,7 +324,7 @@ def grafica_pastel(conteos, titulo, max_sectores=10):
     return _fig_a_base64(fig)
 
 
-def grafica_pastel_bytes(conteos, titulo, max_sectores=10):
+def grafica_pastel_bytes(conteos, titulo, max_sectores=10, formato='png'):
     if not conteos:
         return None
     items = sorted(conteos.items(), key=lambda x: x[1], reverse=True)
@@ -301,7 +348,7 @@ def grafica_pastel_bytes(conteos, titulo, max_sectores=10):
               loc='center left', bbox_to_anchor=(1, 0.5), fontsize=8)
     ax.set_title(titulo, pad=12, fontweight='bold')
     fig.tight_layout()
-    return _fig_a_bytes(fig)
+    return _fig_a_bytes(fig, formato=formato)
 
 
 # ─── Gráfica de línea temporal (casos por mes) ───────────────────────────────
@@ -480,7 +527,7 @@ def grafica_barras_agrupadas(cruzado, titulo_x, titulo_grupo, titulo='', max_cat
 
 
 def grafica_barras_agrupadas_bytes(cruzado, titulo_x, titulo_grupo,
-                                   titulo='', max_cats=10):
+                                   titulo='', max_cats=10, formato='png'):
     """Igual que grafica_barras_agrupadas pero devuelve bytes PNG para descarga."""
     import numpy as np
 
@@ -517,10 +564,10 @@ def grafica_barras_agrupadas_bytes(cruzado, titulo_x, titulo_grupo,
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     fig.tight_layout()
-    return _fig_a_bytes(fig)
+    return _fig_a_bytes(fig, formato=formato)
 
 
-def grafica_linea_temporal_bytes(qs, titulo='Casos por mes'):
+def grafica_linea_temporal_bytes(qs, titulo='Casos por mes', formato='png'):
     from django.db.models import Count
     from django.db.models.functions import TruncMonth
     datos = (
@@ -545,4 +592,4 @@ def grafica_linea_temporal_bytes(qs, titulo='Casos por mes'):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     fig.tight_layout()
-    return _fig_a_bytes(fig)
+    return _fig_a_bytes(fig, formato=formato)

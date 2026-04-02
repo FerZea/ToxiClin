@@ -109,10 +109,13 @@
         <div class="estadistica-encabezado">
             <h3>{{ r.titulo }}</h3>
             <div class="estadistica-acciones">
-                {# Botón de descarga PNG (RF-26) #}
-                <a href="{% url 'exportar_grafica' %}?{{ r.exportar_vars }}&periodo={{ periodo_sel }}&tipo_grafica={{ tipo_sel }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+                <a href="{% url 'exportar_grafica' %}?{{ r.exportar_vars }}&periodo={{ periodo_sel }}&tipo_grafica={{ tipo_sel }}&formato=png&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
                    class="btn-tabla" title="Descargar como PNG">
                     ↓ PNG
+                </a>
+                <a href="{% url 'exportar_grafica' %}?{{ r.exportar_vars }}&periodo={{ periodo_sel }}&tipo_grafica={{ tipo_sel }}&formato=jpg&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}"
+                   class="btn-tabla" title="Descargar como JPG">
+                    ↓ JPG
                 </a>
             </div>
         </div>

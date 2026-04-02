@@ -5,7 +5,7 @@ RF-22: Selección de variables (hasta 4) y cruce entre ellas
 RF-23: Barras, pastel, línea temporal y barras agrupadas
 RF-24: Tabla de frecuencias y tabla cruzada
 RF-25: Filtro temporal (último mes/trimestre/año/rango/todos)
-RF-26: Exportar gráfica como PNG
+RF-26: Exportar gráfica como PNG/JPG
 RF-27: Dashboard con resumen de datos reales
 
 Acceso restringido a administradoras (@solo_admin).
@@ -192,23 +192,25 @@ def _resultado_simple(qs, variable, tipo_grafica):
 @solo_admin
 def exportar_grafica(request):
     """
-    RF-26: Descarga una gráfica como archivo PNG.
+    RF-26: Descarga una gráfica como archivo PNG/JPG.
 
     Parámetros GET:
         variable    — clave de VARIABLES_DISPONIBLES (requerido)
         variable2   — segunda variable para barras agrupadas (opcional)
         tipo_grafica — barras / pastel / linea / barras_agrupadas
+        formato     — png / jpg
         periodo     — todo / mes / trimestre / anio / rango
         fecha_desde / fecha_hasta — para periodo=rango
     """
     variable     = request.GET.get('variable', '')
     variable2    = request.GET.get('variable2', '')
     tipo_grafica = request.GET.get('tipo_grafica', 'barras')
+    formato      = request.GET.get('formato', 'png').lower()
     periodo      = request.GET.get('periodo', 'todo')
     fecha_desde  = _parsear_fecha(request.GET.get('fecha_desde', ''))
     fecha_hasta  = _parsear_fecha(request.GET.get('fecha_hasta', ''))
 
-    if variable not in VARIABLES_DISPONIBLES:
+    if variable not in VARIABLES_DISPONIBLES or formato not in ('png', 'jpg'):
         raise Http404('Variable no válida')
 
     qs = _filtrar_por_periodo(
@@ -225,29 +227,30 @@ def exportar_grafica(request):
         tit_g   = VARIABLES_DISPONIBLES[variable2]
         cruzado = conteos_cruzados(qs, variable, variable2)
         datos_png = grafica_barras_agrupadas_bytes(
-            cruzado, tit_x, tit_g, f'{tit_x}  ×  {tit_g}'
+            cruzado, tit_x, tit_g, f'{tit_x}  ×  {tit_g}', formato=formato
         )
-        nombre_archivo = f'cruce_{variable}_{variable2}_{periodo}.png'
+        nombre_archivo = f'cruce_{variable}_{variable2}_{periodo}.{formato}'
 
     elif tipo_grafica == 'linea':
         datos_png = grafica_linea_temporal_bytes(
-            qs, titulo=f'Casos por mes — {titulo}'
+            qs, titulo=f'Casos por mes — {titulo}', formato=formato
         )
-        nombre_archivo = f'linea_{variable}_{periodo}.png'
+        nombre_archivo = f'linea_{variable}_{periodo}.{formato}'
 
     elif tipo_grafica == 'pastel':
         conteos = conteos_por_variable(qs, variable)
-        datos_png = grafica_pastel_bytes(conteos, titulo)
-        nombre_archivo = f'pastel_{variable}_{periodo}.png'
+        datos_png = grafica_pastel_bytes(conteos, titulo, formato=formato)
+        nombre_archivo = f'pastel_{variable}_{periodo}.{formato}'
 
     else:
         conteos = conteos_por_variable(qs, variable)
-        datos_png = grafica_barras_bytes(conteos, titulo)
-        nombre_archivo = f'barras_{variable}_{periodo}.png'
+        datos_png = grafica_barras_bytes(conteos, titulo, formato=formato)
+        nombre_archivo = f'barras_{variable}_{periodo}.{formato}'
 
     if datos_png is None:
         raise Http404('No hay datos para generar la gráfica')
 
-    respuesta = HttpResponse(datos_png, content_type='image/png')
+    content_type = 'image/jpeg' if formato == 'jpg' else 'image/png'
+    respuesta = HttpResponse(datos_png, content_type=content_type)
     respuesta['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     return respuesta

@@ -23,11 +23,11 @@ def dashboard(request):
     - Cantidad de registros ingresados en el último mes
     - Top 5 agentes tóxicos más frecuentes
     - Top 3 circunstancias más frecuentes
-    - Gráfica de línea con tendencia mensual del último año
+    - Gráfica de línea con tendencia mensual del año actual
     """
     hoy = timezone.now().date()
     inicio_mes = hoy - relativedelta(months=1)
-    inicio_anio = hoy - relativedelta(years=1)
+    inicio_anio = hoy.replace(month=1, day=1)
 
     # Total de historias en la BD
     total = HistoriaClinica.objects.count()
@@ -55,11 +55,11 @@ def dashboard(request):
         .order_by('-total')[:3]
     )
 
-    # Gráfica de tendencia mensual del último año
+    # Gráfica de tendencia mensual del año actual
     qs_anio = HistoriaClinica.objects.filter(
         fecha_hora_consulta__date__gte=inicio_anio
     )
-    grafica_tendencia = grafica_linea_temporal(qs_anio, titulo='Casos por mes (último año)')
+    grafica_tendencia = grafica_linea_temporal(qs_anio, titulo='Casos por mes (año actual)')
 
     return render(request, 'expedientes/dashboard.html', {
         'total': total,

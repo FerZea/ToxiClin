@@ -20,7 +20,7 @@
             <h3 class="seccion-titulo">1. Datos del paciente</h3>
             <div class="seccion-cuerpo">
 
-                <div class="campos-fila">
+                <div class="campos-fila fila-duracion-exposicion">
                     <div class="campo-grupo campo-angosto">
                         {% include 'expedientes/captura/_campo.html' with field=form.folio_expediente %}
                     </div>
@@ -32,7 +32,7 @@
                     </div>
                 </div>
 
-                <div class="campos-fila">
+                <div class="campos-fila fila-duracion-exposicion">
                     <div class="campo-grupo campo-ancho">
                         {% include 'expedientes/captura/_campo.html' with field=form.direccion %}
                     </div>
@@ -323,8 +323,6 @@
                         <span class="col-ab">A (Previo)</span>
                         <span class="col-ab">B (Recomendado)</span>
                     </div>
-                    {# ids_a e ids_b son sets de enteros pasados desde la vista.
-                       Funcionan tanto en GET (carga inicial/edición) como en POST fallido. #}
                     {% for tratamiento in form.tratamiento_a.field.queryset %}
                     <div class="tratamiento-fila">
                         <span class="col-nombre">{{ tratamiento.nombre }}</span>

@@ -298,6 +298,12 @@ class EstadisticasVistaTest(TestCase):
         resp = self.client.get(reverse('dashboard'))
         self.assertContains(resp, '1')   # hay 1 historia creada en setUp
 
+    def test_dashboard_muestra_anio_actual(self):
+        """El dashboard usa la redacción del año calendario actual."""
+        self.client.login(username='cap1_t', password='cap1234test')
+        resp = self.client.get(reverse('dashboard'))
+        self.assertContains(resp, 'Tendencia mensual (año actual)')
+
     # ── Generación de gráficas con variables ────────────────────────────────
 
     def test_estadisticas_con_variable_barras(self):
@@ -308,6 +314,16 @@ class EstadisticasVistaTest(TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         # Debe haber exactamente un resultado
+        self.assertEqual(len(resp.context['resultados']), 1)
+
+    def test_estadisticas_incluye_edad_por_rangos(self):
+        """La variable edad_rango existe y puede procesarse como gráfica individual."""
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(
+            reverse('estadisticas') + '?variables=edad_rango&tipo_grafica=barras'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('edad_rango', resp.context['variables_disp'])
         self.assertEqual(len(resp.context['resultados']), 1)
 
     def test_estadisticas_con_cruce_barras_agrupadas(self):
@@ -364,3 +380,13 @@ class EstadisticasVistaTest(TestCase):
         # Con datos existentes debe devolver 200 y PNG
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp['Content-Type'], 'image/png')
+
+    def test_exportar_jpg_admin(self):
+        """Admin descarga JPG correctamente (content-type image/jpeg)."""
+        self.client.login(username='admin_t', password='admin1234test')
+        resp = self.client.get(
+            reverse('exportar_grafica')
+            + '?variable=tipo_contacto&tipo_grafica=barras&formato=jpg'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'image/jpeg')
