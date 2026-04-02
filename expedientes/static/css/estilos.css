@@ -872,6 +872,151 @@ body {
     padding: 0.5rem 0;
 }
 
+/* ─── Estadísticas ───────────────────────────────────────────────────────── */
+
+/* Variables disponibles como checkboxes en cuadrícula */
+.variables-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.4rem 1rem;
+    margin-top: 0.4rem;
+}
+
+.variable-opcion {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.variable-opcion:hover {
+    background: #e8edf5;
+}
+
+.variable-opcion input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: #1a3a5c;
+}
+
+/* Tarjeta por cada variable estadística generada */
+.estadistica-tarjeta {
+    background: white;
+    border: 1px solid #dde2ee;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.estadistica-encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: #f0f4fa;
+    border-bottom: 1px solid #dde2ee;
+}
+
+.estadistica-encabezado h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #1a3a5c;
+}
+
+.estadistica-acciones {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Contenedor de gráfica + tabla de frecuencias en dos columnas */
+.estadistica-contenido {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+    flex-wrap: wrap;
+}
+
+.estadistica-grafica {
+    flex: 1 1 480px;
+}
+
+.estadistica-tabla {
+    flex: 0 1 280px;
+    overflow-x: auto;
+}
+
+.grafica-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Tabla de frecuencias compacta */
+.tabla-frecuencias {
+    font-size: 0.85rem;
+    width: 100%;
+}
+
+.tabla-frecuencias td,
+.tabla-frecuencias th {
+    padding: 0.3rem 0.5rem;
+}
+
+.tabla-frecuencias tfoot td {
+    border-top: 2px solid #ccc;
+    font-weight: bold;
+}
+
+/* ─── Dashboard RF-27 ────────────────────────────────────────────────────── */
+
+.dashboard-grafica {
+    margin-top: 2rem;
+    background: white;
+    border: 1px solid #dde2ee;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+
+.dashboard-grafica h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    color: #1a3a5c;
+}
+
+.dashboard-tops {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.dashboard-top-col {
+    flex: 1 1 280px;
+    background: white;
+    border: 1px solid #dde2ee;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+
+.dashboard-top-col h3 {
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    color: #1a3a5c;
+}
+
+.tabla-compacta {
+    font-size: 0.88rem;
+}
+
+.tabla-compacta td,
+.tabla-compacta th {
+    padding: 0.3rem 0.6rem;
+}
+
 /* --- Pie de página --- */
 .pie-pagina {
     text-align: center;

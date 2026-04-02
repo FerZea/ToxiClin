@@ -8,6 +8,7 @@ from expedientes.views.captura import (
     nueva_historia, editar_historia, circunstancias_nivel2
 )
 from expedientes.views.consulta import detalle_historia, listado_historias
+from expedientes.views.estadisticas import estadisticas, exportar_grafica
 
 urlpatterns = [
     # Dashboard
@@ -33,4 +34,8 @@ urlpatterns = [
 
     # AJAX: circunstancias nivel 2
     path('ajax/circunstancias-n2/', circunstancias_nivel2, name='circunstancias_nivel2'),
+
+    # Estadísticas y gráficas (RF-22, RF-25, RF-26)
+    path('estadisticas/', estadisticas, name='estadisticas'),
+    path('estadisticas/exportar/', exportar_grafica, name='exportar_grafica'),
 ]

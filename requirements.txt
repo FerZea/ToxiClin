@@ -7,6 +7,9 @@ Django==5.1.5
 # Servidor WSGI para Windows en producción local
 waitress==3.0.1
 
+# Cálculo de fechas relativas (meses, trimestres, años)
+python-dateutil==2.9.0.post0
+
 # Gráficas estadísticas
 matplotlib==3.9.4
 plotly==5.24.1

@@ -5,24 +5,80 @@
 {% block contenido %}
 <div class="dashboard">
     <h2>Bienvenido, {{ user.get_full_name|default:user.username }}</h2>
-    <p class="texto-secundario">Sistema de Gestión de Expedientes Clínicos Toxicológicos</p>
+    <p class="texto-secundario">Sistema de Gestión de Expedientes Clínicos Toxicológicos — CIAT</p>
 
+    {# ── Tarjetas de resumen ─────────────────────────────────────────────── #}
     <div class="tarjetas-resumen">
         <div class="tarjeta">
-            <span class="tarjeta-numero">—</span>
+            <span class="tarjeta-numero">{{ total }}</span>
             <span class="tarjeta-etiqueta">Total de registros</span>
         </div>
         <div class="tarjeta">
-            <span class="tarjeta-numero">—</span>
-            <span class="tarjeta-etiqueta">Registros este mes</span>
+            <span class="tarjeta-numero">{{ este_mes }}</span>
+            <span class="tarjeta-etiqueta">Registros último mes</span>
         </div>
     </div>
 
+    {# ── Acciones rápidas ────────────────────────────────────────────────── #}
     <div class="acciones-rapidas">
         <h3>Acciones rápidas</h3>
         <a href="{% url 'nueva_historia' %}" class="btn-primario">Nueva Historia Clínica</a>
         <a href="{% url 'listado_historias' %}" class="btn-secundario">Consultar Registros</a>
-        <a href="#" class="btn-secundario">Ver Estadísticas</a>
+        <a href="{% url 'estadisticas' %}" class="btn-secundario">Ver Estadísticas</a>
     </div>
+
+    {# ── Gráfica de tendencia mensual ────────────────────────────────────── #}
+    {% if grafica_tendencia %}
+    <div class="dashboard-grafica">
+        <h3>Tendencia mensual (último año)</h3>
+        <img src="data:image/png;base64,{{ grafica_tendencia }}"
+             alt="Tendencia de casos por mes"
+             class="grafica-img">
+    </div>
+    {% endif %}
+
+    {# ── Top agentes y circunstancias ────────────────────────────────────── #}
+    <div class="dashboard-tops">
+
+        {% if top_agentes %}
+        <div class="dashboard-top-col">
+            <h3>Top 5 tipos de agente</h3>
+            <table class="tabla tabla-compacta">
+                <thead>
+                    <tr><th>Agente</th><th>Casos</th></tr>
+                </thead>
+                <tbody>
+                    {% for a in top_agentes %}
+                    <tr>
+                        <td>{{ a.tipo_agente__nombre }}</td>
+                        <td>{{ a.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if top_circunstancias %}
+        <div class="dashboard-top-col">
+            <h3>Top 3 circunstancias</h3>
+            <table class="tabla tabla-compacta">
+                <thead>
+                    <tr><th>Circunstancia</th><th>Casos</th></tr>
+                </thead>
+                <tbody>
+                    {% for c in top_circunstancias %}
+                    <tr>
+                        <td>{{ c.circunstancia_nivel1__nombre }}</td>
+                        <td>{{ c.total }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+    </div>
+
 </div>
 {% endblock %}
