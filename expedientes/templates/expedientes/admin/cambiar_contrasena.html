@@ -1,0 +1,30 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}Cambiar Contraseña — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="formulario-contenedor">
+    <h2>Cambiar contraseña: <strong>{{ usuario.username }}</strong></h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+            <label for="password1">Nueva contraseña *</label>
+            <input type="password" id="password1" name="password1"
+                   placeholder="Mínimo 8 caracteres" required>
+        </div>
+
+        <div class="campo-grupo">
+            <label for="password2">Confirmar nueva contraseña *</label>
+            <input type="password" id="password2" name="password2"
+                   placeholder="Repetir contraseña" required>
+        </div>
+
+        <div class="botones-formulario">
+            <button type="submit" class="btn-primario">Cambiar contraseña</button>
+            <a href="{% url 'lista_usuarios' %}" class="btn-secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

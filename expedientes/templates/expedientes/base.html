@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block titulo %}ToxiClin — CIAT{% endblock %}</title>
-    {# Todos los archivos CSS son locales — sin CDN ni conexiones externas #}
     <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
 </head>
 <body>
@@ -21,16 +20,32 @@
         <li><a href="#">Nueva Historia</a></li>
         <li><a href="#">Consultar</a></li>
         <li><a href="#">Estadísticas</a></li>
+        {# Solo Administrador y superusuario ven este menú #}
+        {% if user.is_superuser or user.groups.all.0.name == 'Administrador' %}
+        <li class="navbar-dropdown">
+            <a href="#">Administración ▾</a>
+            <ul class="navbar-dropdown-menu">
+                <li><a href="{% url 'lista_usuarios' %}">Gestión de usuarios</a></li>
+                <li><a href="/admin/">Admin Django</a></li>
+            </ul>
+        </li>
+        {% endif %}
     </ul>
     <div class="navbar-usuario">
-        <span>{{ user.get_full_name|default:user.username }}</span>
+        <span>
+            {{ user.get_full_name|default:user.username }}
+            {% if user.groups.all %}
+            <small class="usuario-rol">({{ user.groups.all.0.name }})</small>
+            {% elif user.is_superuser %}
+            <small class="usuario-rol">(Superusuario)</small>
+            {% endif %}
+        </span>
         <a href="{% url 'logout' %}" class="btn-salir">Salir</a>
     </div>
 </nav>
 {% endif %}
 
 <main class="contenido-principal">
-    {# Mensajes flash: éxito, error, advertencia #}
     {% if messages %}
     <div class="mensajes">
         {% for mensaje in messages %}

@@ -1,0 +1,60 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}Gestión de Usuarios — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="seccion-encabezado">
+    <h2>Usuarios del sistema</h2>
+    <a href="{% url 'crear_usuario' %}" class="btn-primario">+ Nuevo usuario</a>
+</div>
+
+<table class="tabla">
+    <thead>
+        <tr>
+            <th>Usuario</th>
+            <th>Nombre completo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in usuarios %}
+        <tr class="{% if not u.is_active %}fila-inactiva{% endif %}">
+            <td><strong>{{ u.username }}</strong></td>
+            <td>{{ u.get_full_name|default:"—" }}</td>
+            <td>
+                {% if u.is_superuser %}
+                    <span class="badge badge-superusuario">Superusuario</span>
+                {% elif u.groups.all %}
+                    {% for grupo in u.groups.all %}
+                    <span class="badge badge-{{ grupo.name|lower }}">{{ grupo.name }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="badge badge-sin-rol">Sin rol</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if u.is_active %}
+                    <span class="estado-activo">Activo</span>
+                {% else %}
+                    <span class="estado-inactivo">Inactivo</span>
+                {% endif %}
+            </td>
+            <td class="acciones-celda">
+                {% if not u.is_superuser %}
+                <a href="{% url 'editar_usuario' u.pk %}" class="btn-tabla">Editar</a>
+                <a href="{% url 'cambiar_contrasena' u.pk %}" class="btn-tabla">Contraseña</a>
+                {% else %}
+                <span class="texto-secundario">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="tabla-vacia">No hay usuarios registrados.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

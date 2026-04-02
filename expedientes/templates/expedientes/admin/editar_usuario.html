@@ -1,0 +1,40 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}Editar Usuario — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="formulario-contenedor">
+    <h2>Editar usuario: <strong>{{ usuario.username }}</strong></h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+            <label for="grupo">Rol</label>
+            <select id="grupo" name="grupo">
+                <option value="">— Sin rol —</option>
+                {% for grupo in grupos %}
+                <option value="{{ grupo.pk }}"
+                    {% if grupo_actual and grupo_actual.pk == grupo.pk %}selected{% endif %}>
+                    {{ grupo.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="campo-grupo campo-checkbox">
+            <label>
+                <input type="checkbox" name="activo"
+                       {% if usuario.is_active %}checked{% endif %}>
+                Usuario activo
+            </label>
+            <small>Desactivar impide que el usuario inicie sesión sin borrarlo.</small>
+        </div>
+
+        <div class="botones-formulario">
+            <button type="submit" class="btn-primario">Guardar cambios</button>
+            <a href="{% url 'lista_usuarios' %}" class="btn-secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

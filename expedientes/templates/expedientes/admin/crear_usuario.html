@@ -1,0 +1,71 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}Nuevo Usuario — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="formulario-contenedor">
+    <h2>Nuevo usuario</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="campo-grupo">
+            <label for="username">Nombre de usuario *</label>
+            <input type="text" id="username" name="username"
+                   value="{{ valores.username|default:'' }}"
+                   placeholder="ej: alumno_garcia" required>
+            <small>Solo letras, números y guiones bajos. Sin espacios.</small>
+        </div>
+
+        <div class="campos-fila">
+            <div class="campo-grupo">
+                <label for="first_name">Nombre(s)</label>
+                <input type="text" id="first_name" name="first_name"
+                       value="{{ valores.first_name|default:'' }}"
+                       placeholder="ej: Juan Carlos">
+            </div>
+            <div class="campo-grupo">
+                <label for="last_name">Apellidos</label>
+                <input type="text" id="last_name" name="last_name"
+                       value="{{ valores.last_name|default:'' }}"
+                       placeholder="ej: García López">
+            </div>
+        </div>
+
+        <div class="campo-grupo">
+            <label for="grupo">Rol *</label>
+            <select id="grupo" name="grupo" required>
+                <option value="">— Seleccionar rol —</option>
+                {% for grupo in grupos %}
+                <option value="{{ grupo.pk }}"
+                    {% if valores.grupo == grupo.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ grupo.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <small>
+                <strong>Administrador</strong>: acceso total (Dra. Evelyn, Dra. Susana) |
+                <strong>Capturista</strong>: solo captura (alumnos rotantes)
+            </small>
+        </div>
+
+        <div class="campos-fila">
+            <div class="campo-grupo">
+                <label for="password1">Contraseña *</label>
+                <input type="password" id="password1" name="password1"
+                       placeholder="Mínimo 8 caracteres" required>
+            </div>
+            <div class="campo-grupo">
+                <label for="password2">Confirmar contraseña *</label>
+                <input type="password" id="password2" name="password2"
+                       placeholder="Repetir contraseña" required>
+            </div>
+        </div>
+
+        <div class="botones-formulario">
+            <button type="submit" class="btn-primario">Crear usuario</button>
+            <a href="{% url 'lista_usuarios' %}" class="btn-secundario">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

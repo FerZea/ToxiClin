@@ -295,6 +295,214 @@ body {
     margin-bottom: 0.5rem;
 }
 
+/* --- Navbar dropdown --- */
+.navbar-dropdown {
+    position: relative;
+}
+
+.navbar-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #1a3a5c;
+    border: 1px solid #2a5a8c;
+    border-radius: 4px;
+    min-width: 200px;
+    z-index: 100;
+    list-style: none;
+    padding: 0.3rem 0;
+}
+
+.navbar-dropdown:hover .navbar-dropdown-menu {
+    display: block;
+}
+
+.navbar-dropdown-menu li a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #cde0f0;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.navbar-dropdown-menu li a:hover {
+    background-color: #2a5a8c;
+    color: white;
+}
+
+.usuario-rol {
+    font-size: 0.78rem;
+    color: #7ecfff;
+    font-weight: normal;
+}
+
+/* --- Tablas --- */
+.tabla {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-top: 1rem;
+}
+
+.tabla th {
+    background-color: #1a3a5c;
+    color: white;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.tabla td {
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+}
+
+.tabla tbody tr:hover {
+    background-color: #f8f9ff;
+}
+
+.tabla-vacia {
+    text-align: center;
+    color: #888;
+    padding: 2rem !important;
+}
+
+.fila-inactiva td {
+    color: #aaa;
+}
+
+.acciones-celda {
+    white-space: nowrap;
+}
+
+.btn-tabla {
+    background-color: #e8f0fe;
+    color: #1a3a5c;
+    border: 1px solid #b8d0f0;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.82rem;
+    margin-right: 0.25rem;
+}
+
+.btn-tabla:hover {
+    background-color: #1a3a5c;
+    color: white;
+}
+
+/* --- Badges de rol --- */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.badge-administrador {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.badge-capturista {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.badge-superusuario {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.badge-sin-rol {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* --- Estado activo/inactivo --- */
+.estado-activo {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.estado-inactivo {
+    color: #dc3545;
+}
+
+/* --- Encabezado de sección con botón --- */
+.seccion-encabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.seccion-encabezado h2 {
+    color: #1a3a5c;
+    margin: 0;
+}
+
+/* --- Formularios generales --- */
+.formulario-contenedor {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 700px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.formulario-contenedor h2 {
+    color: #1a3a5c;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #eef0f5;
+}
+
+.campos-fila {
+    display: flex;
+    gap: 1rem;
+}
+
+.campos-fila .campo-grupo {
+    flex: 1;
+}
+
+.campo-grupo small {
+    display: block;
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+}
+
+.campo-checkbox {
+    display: flex;
+    flex-direction: column;
+}
+
+.campo-checkbox label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.campo-checkbox input[type="checkbox"] {
+    width: auto;
+}
+
+.botones-formulario {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+}
+
 /* --- Pie de página --- */
 .pie-pagina {
     text-align: center;
