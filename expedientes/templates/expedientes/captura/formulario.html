@@ -1,0 +1,436 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}{{ titulo }} — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="formulario-historia">
+
+    <div class="formulario-encabezado">
+        <h2>{{ titulo }}</h2>
+        <p class="texto-secundario">Los campos marcados con * son obligatorios</p>
+    </div>
+
+    <form method="post" id="form-historia" novalidate>
+        {% csrf_token %}
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 1 — DATOS DEL PACIENTE                           #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">1. Datos del paciente</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campos-fila">
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.folio_expediente %}
+                    </div>
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.nombre %}
+                    </div>
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.apellido %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.direccion %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.localidad %}
+                    </div>
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.telefono %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.sexo %}
+                    </div>
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.fecha_nacimiento %}
+                    </div>
+                    {# Edad calculada automáticamente — solo lectura #}
+                    <div class="campo-grupo campo-angosto">
+                        <label>Edad (calculada)</label>
+                        <input type="text" id="edad-display" readonly
+                               placeholder="Se calcula al ingresar fecha"
+                               class="campo-readonly">
+                    </div>
+                    {# Embarazo: solo visible si sexo = Femenino #}
+                    <div class="campo-grupo campo-angosto" id="campo-embarazo" style="display:none">
+                        {% include 'expedientes/captura/_campo.html' with field=form.embarazo_lactancia %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.escolaridad %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.curp %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.medico %}
+                    </div>
+                </div>
+
+                <div class="campo-grupo">
+                    {% include 'expedientes/captura/_campo.html' with field=form.antecedentes_patologicos %}
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 2 — DATOS DE LA CONSULTA                         #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">2. Datos de la consulta</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.tipo_frecuencia %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.tipo_contacto %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.motivo_consulta %}
+                    </div>
+                </div>
+
+                {# Subtipo presencial: solo visible si tipo_contacto = presencial #}
+                <div class="campos-fila" id="campo-subtipo-presencial" style="display:none">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.subtipo_presencial %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    {# Fecha ingreso: solo visible si es presencial #}
+                    <div class="campo-grupo" id="campo-fecha-ingreso" style="display:none">
+                        {% include 'expedientes/captura/_campo.html' with field=form.fecha_hora_ingreso %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.fecha_hora_consulta %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.fecha_hora_evento_exposicion %}
+                    </div>
+                </div>
+
+                {# Latencia calculada automáticamente — solo lectura #}
+                <div class="campo-grupo campo-angosto">
+                    <label>Latencia (calculada)</label>
+                    <input type="text" id="latencia-display" readonly
+                           placeholder="Se calcula automáticamente"
+                           class="campo-readonly">
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 3 — DATOS DEL INTERLOCUTOR (solo telefónico)     #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form" id="seccion-interlocutor" style="display:none">
+            <h3 class="seccion-titulo">3. Datos del interlocutor</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campos-fila">
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_nombre %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_categoria %}
+                    </div>
+                    <div class="campo-grupo" id="campo-interlocutor-especificar" style="display:none">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_categoria_especificar %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_ubicacion_nombre %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_ubicacion_tipo %}
+                    </div>
+                    <div class="campo-grupo campo-angosto" id="campo-sector" style="display:none">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_ubicacion_sector %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_localidad %}
+                    </div>
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.interlocutor_telefono %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 4 — CIRCUNSTANCIAS DE LA EXPOSICIÓN              #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">4. Circunstancias de la exposición</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.circunstancia_nivel1 %}
+                    </div>
+                    <div class="campo-grupo" id="campo-circunstancia-n2">
+                        {% include 'expedientes/captura/_campo.html' with field=form.circunstancia_nivel2 %}
+                    </div>
+                    <div class="campo-grupo" id="campo-circunstancia-otro" style="display:none">
+                        {% include 'expedientes/captura/_campo.html' with field=form.circunstancia_otro_texto %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.ubicacion_evento %}
+                    </div>
+                    <div class="campo-grupo campo-angosto" id="campo-ubicacion-otro" style="display:none">
+                        {% include 'expedientes/captura/_campo.html' with field=form.ubicacion_evento_otro %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.tipo_exposicion %}
+                    </div>
+                </div>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.duracion_exposicion_valor %}
+                    </div>
+                    <div class="campo-grupo campo-angosto">
+                        {% include 'expedientes/captura/_campo.html' with field=form.duracion_exposicion_unidad %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 5 — AGENTE TÓXICO                                #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">5. Agente tóxico</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.tipo_agente %}
+                    </div>
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.agente_principio_activo %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.agente_cantidad_informada %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 6 — VÍA DE INGRESO                               #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">6. Vía de ingreso</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="checkboxes-grupo">
+                    {% for checkbox in form.vias_ingreso %}
+                    <label class="checkbox-etiqueta">
+                        {{ checkbox.tag }} {{ checkbox.choice_label }}
+                    </label>
+                    {% endfor %}
+                    {% if form.vias_ingreso.errors %}
+                    <p class="campo-error">{{ form.vias_ingreso.errors|join:", " }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="campo-grupo campo-angosto" id="campo-via-otra" style="display:none">
+                    {% include 'expedientes/captura/_campo.html' with field=form.via_ingreso_otra_especificar %}
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 7 — SIGNOS, SÍNTOMAS Y SIGNOS VITALES            #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">7. Clínica</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campo-grupo">
+                    {% include 'expedientes/captura/_campo.html' with field=form.signos_sintomas %}
+                </div>
+
+                <fieldset class="signos-vitales">
+                    <legend>Signos vitales</legend>
+                    <div class="campos-fila">
+                        <div class="campo-grupo campo-angosto">
+                            {% include 'expedientes/captura/_campo.html' with field=form.fc %}
+                        </div>
+                        <div class="campo-grupo campo-angosto">
+                            {% include 'expedientes/captura/_campo.html' with field=form.fr %}
+                        </div>
+                        <div class="campo-grupo campo-angosto">
+                            {% include 'expedientes/captura/_campo.html' with field=form.temp %}
+                        </div>
+                        <div class="campo-grupo campo-angosto">
+                            {% include 'expedientes/captura/_campo.html' with field=form.sat %}
+                        </div>
+                        <div class="campo-grupo campo-angosto">
+                            {% include 'expedientes/captura/_campo.html' with field=form.ta %}
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.severidad %}
+                    </div>
+                    <div class="campo-grupo campo-ancho">
+                        {% include 'expedientes/captura/_campo.html' with field=form.estudios_solicitados %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 8 — TRATAMIENTO A y B                            #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">8. Tratamiento</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="tratamiento-tabla">
+                    <div class="tratamiento-encabezado">
+                        <span class="col-nombre">Tratamiento</span>
+                        <span class="col-ab">A (Previo)</span>
+                        <span class="col-ab">B (Recomendado)</span>
+                    </div>
+                    {% for tratamiento in form.tratamiento_a.field.queryset %}
+                    <div class="tratamiento-fila">
+                        <span class="col-nombre">{{ tratamiento.nombre }}</span>
+                        <span class="col-ab">
+                            <input type="checkbox"
+                                   name="tratamiento_a"
+                                   value="{{ tratamiento.pk }}"
+                                   id="ta_{{ tratamiento.pk }}"
+                                   {% if tratamiento in form.tratamiento_a.value %}checked{% endif %}>
+                        </span>
+                        <span class="col-ab">
+                            <input type="checkbox"
+                                   name="tratamiento_b"
+                                   value="{{ tratamiento.pk }}"
+                                   id="tb_{{ tratamiento.pk }}"
+                                   {% if tratamiento in form.tratamiento_b.value %}checked{% endif %}>
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="campos-fila" style="margin-top: 1rem">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.tratamiento_a_especificar %}
+                    </div>
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.tratamiento_b_especificar %}
+                    </div>
+                </div>
+
+                <div class="campo-grupo">
+                    {% include 'expedientes/captura/_campo.html' with field=form.tratamiento_notas %}
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 9 — EVOLUCIÓN Y HOSPITALIZACIÓN                  #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">9. Evolución y hospitalización</h3>
+            <div class="seccion-cuerpo">
+
+                <div class="campos-fila">
+                    <div class="campo-grupo">
+                        {% include 'expedientes/captura/_campo.html' with field=form.evolucion %}
+                    </div>
+                </div>
+
+                <fieldset class="hospitalizacion-grupo">
+                    <legend>Hospitalización — Lugar</legend>
+                    <div class="checkboxes-fila">
+                        <label class="checkbox-etiqueta">
+                            {{ form.hospitalizacion_sala_general }} Sala General
+                        </label>
+                        <label class="checkbox-etiqueta">
+                            {{ form.hospitalizacion_uci_uti }} UCI / UTI
+                        </label>
+                        <label class="checkbox-etiqueta">
+                            {{ form.hospitalizacion_urgencias }} Urgencias
+                        </label>
+                    </div>
+                    <div class="campos-fila" style="margin-top: 0.75rem">
+                        <div class="campo-grupo campo-angosto">
+                            {% include 'expedientes/captura/_campo.html' with field=form.hospitalizacion_dias %}
+                        </div>
+                        <div class="campo-grupo">
+                            {% include 'expedientes/captura/_campo.html' with field=form.hospitalizacion_responsable %}
+                        </div>
+                    </div>
+                </fieldset>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════ #}
+        {# SECCIÓN 10 — COMENTARIO Y FIRMA                          #}
+        {# ══════════════════════════════════════════════════════════ #}
+        <div class="seccion-form">
+            <h3 class="seccion-titulo">10. Comentario y firma</h3>
+            <div class="seccion-cuerpo">
+                <div class="campo-grupo">
+                    {% include 'expedientes/captura/_campo.html' with field=form.comentario %}
+                </div>
+                <div class="campo-grupo">
+                    {% include 'expedientes/captura/_campo.html' with field=form.firma_responsable %}
+                </div>
+            </div>
+        </div>
+
+        {# Botones de acción #}
+        <div class="formulario-botones">
+            <button type="submit" class="btn-primario btn-grande">
+                {% if modo == 'editar' %}Guardar cambios{% else %}Guardar historia clínica{% endif %}
+            </button>
+            <a href="{% url 'dashboard' %}" class="btn-secundario btn-grande">Cancelar</a>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+    // Pasar la URL del endpoint AJAX a JavaScript
+    const URL_CIRCUNSTANCIAS_N2 = "{% url 'circunstancias_nivel2' %}";
+</script>
+<script src="{% static 'js/formulario.js' %}">
+</script>
+{% endblock %}

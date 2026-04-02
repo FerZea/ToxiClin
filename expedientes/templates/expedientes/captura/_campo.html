@@ -1,0 +1,14 @@
+{# Template parcial reutilizable para renderizar un campo del formulario. #}
+{# Uso: {% include 'expedientes/captura/_campo.html' with field=form.nombre %} #}
+<div class="campo-wrapper {% if field.errors %}campo-con-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}
+        {% for error in field.errors %}
+        <p class="campo-error">{{ error }}</p>
+        {% endfor %}
+    {% endif %}
+    {% if field.help_text %}
+    <small class="campo-ayuda">{{ field.help_text }}</small>
+    {% endif %}
+</div>

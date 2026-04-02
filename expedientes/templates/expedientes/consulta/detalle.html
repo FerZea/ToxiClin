@@ -1,0 +1,109 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}Historia #{{ historia.consulta_numero }} — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="seccion-encabezado">
+    <h2>Historia Clínica #{{ historia.consulta_numero }}</h2>
+    <div>
+        <a href="{% url 'editar_historia' historia.pk %}" class="btn-secundario">Editar</a>
+        <a href="{% url 'dashboard' %}" class="btn-secundario">Volver al inicio</a>
+    </div>
+</div>
+
+<div class="detalle-historia">
+
+    <div class="detalle-seccion">
+        <h3>Paciente</h3>
+        <div class="detalle-grid">
+            <div><strong>Folio:</strong> {{ historia.folio_expediente }}</div>
+            <div><strong>Nombre:</strong> {{ historia.apellido }}, {{ historia.nombre }}</div>
+            <div><strong>Sexo:</strong> {{ historia.sexo|default:"—" }}</div>
+            <div><strong>Fecha de nacimiento:</strong> {{ historia.fecha_nacimiento|default:"—" }}</div>
+            <div><strong>Edad:</strong>
+                {% if historia.edad_valor %}
+                    {{ historia.edad_valor }}
+                    {% if historia.edad_unidad == 'd' %}días
+                    {% elif historia.edad_unidad == 'm' %}meses
+                    {% else %}años{% endif %}
+                {% else %}—{% endif %}
+            </div>
+            <div><strong>CURP:</strong> {{ historia.curp|default:"—" }}</div>
+            <div><strong>Localidad:</strong> {{ historia.localidad|default:"—" }}</div>
+            <div><strong>Teléfono:</strong> {{ historia.telefono|default:"—" }}</div>
+        </div>
+    </div>
+
+    <div class="detalle-seccion">
+        <h3>Consulta</h3>
+        <div class="detalle-grid">
+            <div><strong>Tipo:</strong> {{ historia.tipo_contacto|default:"—" }}</div>
+            <div><strong>Motivo:</strong> {{ historia.motivo_consulta|default:"—" }}</div>
+            <div><strong>Frecuencia:</strong> {{ historia.tipo_frecuencia|default:"—" }}</div>
+            <div><strong>Fecha consulta:</strong> {{ historia.fecha_hora_consulta|default:"—" }}</div>
+            <div><strong>Fecha ingreso:</strong> {{ historia.fecha_hora_ingreso|default:"—" }}</div>
+            <div><strong>Fecha exposición:</strong> {{ historia.fecha_hora_evento_exposicion|default:"—" }}</div>
+            <div><strong>Latencia:</strong>
+                {% if historia.latencia_valor %}
+                    {{ historia.latencia_valor }}
+                    {% if historia.latencia_unidad == 'mi' %}min
+                    {% elif historia.latencia_unidad == 'hr' %}hr
+                    {% elif historia.latencia_unidad == 'di' %}días
+                    {% elif historia.latencia_unidad == 'ms' %}meses
+                    {% elif historia.latencia_unidad == 'a' %}años
+                    {% else %}desconocida{% endif %}
+                {% else %}Desconocida{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="detalle-seccion">
+        <h3>Agente tóxico</h3>
+        <div class="detalle-grid">
+            <div><strong>Tipo:</strong> {{ historia.tipo_agente|default:"—" }}</div>
+            <div><strong>Agente:</strong> {{ historia.agente_principio_activo|default:"—" }}</div>
+            <div><strong>Cantidad:</strong> {{ historia.agente_cantidad_informada|default:"—" }}</div>
+            <div><strong>Circunstancia:</strong>
+                {{ historia.circunstancia_nivel1|default:"—" }}
+                {% if historia.circunstancia_nivel2 %} → {{ historia.circunstancia_nivel2.nombre }}{% endif %}
+            </div>
+            <div><strong>Vías de ingreso:</strong>
+                {% for via in historia.vias_ingreso.all %}{{ via.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="detalle-seccion">
+        <h3>Clínica</h3>
+        <div class="detalle-grid">
+            <div><strong>Severidad:</strong> {{ historia.severidad|default:"—" }}</div>
+            <div><strong>FC:</strong> {{ historia.fc|default:"—" }} lpm</div>
+            <div><strong>FR:</strong> {{ historia.fr|default:"—" }} rpm</div>
+            <div><strong>Temp:</strong> {{ historia.temp|default:"—" }} °C</div>
+            <div><strong>SatO₂:</strong> {{ historia.sat|default:"—" }} %</div>
+            <div><strong>TA:</strong> {{ historia.ta|default:"—" }}</div>
+        </div>
+        {% if historia.signos_sintomas %}
+        <p><strong>Signos y síntomas:</strong> {{ historia.signos_sintomas }}</p>
+        {% endif %}
+    </div>
+
+    <div class="detalle-seccion">
+        <h3>Evolución</h3>
+        <div class="detalle-grid">
+            <div><strong>Evolución:</strong> {{ historia.evolucion|default:"—" }}</div>
+        </div>
+        {% if historia.comentario %}
+        <p><strong>Comentario:</strong> {{ historia.comentario }}</p>
+        {% endif %}
+    </div>
+
+    <div class="detalle-auditoria">
+        <small>
+            Capturado por <strong>{{ historia.usuario_captura|default:"—" }}</strong>
+            el {{ historia.fecha_captura|date:"d/m/Y H:i" }}
+        </small>
+    </div>
+
+</div>
+{% endblock %}
