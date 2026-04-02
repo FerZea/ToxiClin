@@ -7,7 +7,7 @@ from expedientes.views.admin_custom import (
 from expedientes.views.captura import (
     nueva_historia, editar_historia, circunstancias_nivel2
 )
-from expedientes.views.consulta import detalle_historia
+from expedientes.views.consulta import detalle_historia, listado_historias
 
 urlpatterns = [
     # Dashboard
@@ -27,7 +27,8 @@ urlpatterns = [
     path('historias/nueva/', nueva_historia, name='nueva_historia'),
     path('historias/<int:pk>/editar/', editar_historia, name='editar_historia'),
 
-    # Detalle de historia
+    # Listado y detalle
+    path('historias/', listado_historias, name='listado_historias'),
     path('historias/<int:pk>/', detalle_historia, name='detalle_historia'),
 
     # AJAX: circunstancias nivel 2

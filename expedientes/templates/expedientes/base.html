@@ -18,7 +18,7 @@
     <ul class="navbar-menu">
         <li><a href="{% url 'dashboard' %}">Inicio</a></li>
         <li><a href="{% url 'nueva_historia' %}">Nueva Historia</a></li>
-        <li><a href="#">Consultar</a></li>
+        <li><a href="{% url 'listado_historias' %}">Consultar</a></li>
         <li><a href="#">Estadísticas</a></li>
         {# Solo Administrador y superusuario ven este menú #}
         {% if user.is_superuser or user.groups.all.0.name == 'Administrador' %}

@@ -678,6 +678,109 @@ body {
     gap: 1rem;
 }
 
+/* --- Panel de filtros --- */
+.filtros-panel {
+    background: white;
+    border-radius: 8px;
+    padding: 1.2rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    margin-bottom: 1rem;
+}
+
+.filtros-fila {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+    align-items: flex-end;
+}
+
+.filtros-fila:last-child {
+    margin-bottom: 0;
+}
+
+.filtros-fila .campo-grupo {
+    flex: 1;
+    min-width: 150px;
+}
+
+.filtros-botones {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    padding-bottom: 0.05rem;
+}
+
+/* --- Resultados --- */
+.resultados-info {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 0.5rem;
+}
+
+/* --- Badges de severidad (colores por nivel) --- */
+.severidad-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.severidad-0 { background: #e8f5e9; color: #2e7d32; }  /* Asintomático */
+.severidad-1 { background: #fff9c4; color: #f57f17; }  /* Leve */
+.severidad-2 { background: #ffe0b2; color: #e65100; }  /* Moderada */
+.severidad-3 { background: #ffcdd2; color: #b71c1c; }  /* Severa */
+.severidad-4 { background: #4a0000; color: #ffffff; }  /* Fatal */
+.severidad-5 { background: #eeeeee; color: #555555; }  /* Sin relación */
+
+.tipo-agente-badge {
+    font-size: 0.78rem;
+    color: #1a3a5c;
+}
+
+/* --- Sin resultados --- */
+.sin-resultados {
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 8px;
+    color: #666;
+}
+
+.sin-resultados p {
+    margin-bottom: 1rem;
+}
+
+/* --- Paginación --- */
+.paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pag-btn {
+    background: white;
+    border: 1px solid #dde3ec;
+    color: #1a3a5c;
+    padding: 0.4rem 0.9rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.pag-btn:hover {
+    background: #1a3a5c;
+    color: white;
+}
+
+.pag-info {
+    font-size: 0.9rem;
+    color: #666;
+}
+
 /* --- Vista de detalle --- */
 .detalle-historia {
     display: flex;

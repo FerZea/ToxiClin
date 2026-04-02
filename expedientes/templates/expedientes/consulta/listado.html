@@ -1,0 +1,191 @@
+{% extends 'expedientes/base.html' %}
+
+{% block titulo %}Consultar Historias — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="seccion-encabezado">
+    <h2>Historias Clínicas</h2>
+    <a href="{% url 'nueva_historia' %}" class="btn-primario">+ Nueva Historia</a>
+</div>
+
+{# ── Panel de filtros ── #}
+<div class="filtros-panel">
+    <form method="get" id="form-filtros">
+
+        <div class="filtros-fila">
+            <div class="campo-grupo">
+                <label for="{{ form.folio.id_for_label }}">{{ form.folio.label }}</label>
+                {{ form.folio }}
+            </div>
+            <div class="campo-grupo">
+                <label for="{{ form.paciente.id_for_label }}">{{ form.paciente.label }}</label>
+                {{ form.paciente }}
+            </div>
+            <div class="campo-grupo">
+                <label for="{{ form.agente.id_for_label }}">{{ form.agente.label }}</label>
+                {{ form.agente }}
+            </div>
+        </div>
+
+        <div class="filtros-fila">
+            <div class="campo-grupo">
+                <label>{{ form.tipo_agente.label }}</label>
+                {{ form.tipo_agente }}
+            </div>
+            <div class="campo-grupo">
+                <label>{{ form.circunstancia.label }}</label>
+                {{ form.circunstancia }}
+            </div>
+            <div class="campo-grupo">
+                <label>{{ form.severidad.label }}</label>
+                {{ form.severidad }}
+            </div>
+            <div class="campo-grupo">
+                <label>{{ form.sexo.label }}</label>
+                {{ form.sexo }}
+            </div>
+        </div>
+
+        <div class="filtros-fila">
+            <div class="campo-grupo">
+                <label>{{ form.tipo_contacto.label }}</label>
+                {{ form.tipo_contacto }}
+            </div>
+            <div class="campo-grupo">
+                <label>{{ form.motivo_consulta.label }}</label>
+                {{ form.motivo_consulta }}
+            </div>
+            <div class="campo-grupo">
+                <label>{{ form.evolucion.label }}</label>
+                {{ form.evolucion }}
+            </div>
+            <div class="campo-grupo">
+                <label>{{ form.via_ingreso.label }}</label>
+                {{ form.via_ingreso }}
+            </div>
+        </div>
+
+        <div class="filtros-fila">
+            <div class="campo-grupo campo-angosto">
+                <label>{{ form.fecha_desde.label }}</label>
+                {{ form.fecha_desde }}
+            </div>
+            <div class="campo-grupo campo-angosto">
+                <label>{{ form.fecha_hasta.label }}</label>
+                {{ form.fecha_hasta }}
+            </div>
+            <div class="campo-grupo campo-angosto">
+                <label>{{ form.edad_min.label }}</label>
+                {{ form.edad_min }}
+            </div>
+            <div class="campo-grupo campo-angosto">
+                <label>{{ form.edad_max.label }}</label>
+                {{ form.edad_max }}
+            </div>
+            <div class="filtros-botones">
+                <button type="submit" class="btn-primario">Buscar</button>
+                <a href="{% url 'listado_historias' %}" class="btn-secundario">Limpiar</a>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+{# ── Conteo de resultados ── #}
+<div class="resultados-info">
+    {% if hay_filtros %}
+        <strong>{{ total }}</strong> resultado{{ total|pluralize }} encontrado{{ total|pluralize }}
+    {% else %}
+        <strong>{{ total }}</strong> historia{{ total|pluralize }} en total
+    {% endif %}
+</div>
+
+{# ── Tabla de resultados ── #}
+{% if historias %}
+<table class="tabla">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Folio</th>
+            <th>Paciente</th>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Agente</th>
+            <th>Severidad</th>
+            <th>Evolución</th>
+            <th>Capturó</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for h in historias %}
+        <tr>
+            <td class="texto-secundario">{{ h.consulta_numero }}</td>
+            <td><strong>{{ h.folio_expediente }}</strong></td>
+            <td>{{ h.apellido }}, {{ h.nombre }}</td>
+            <td>
+                {% if h.fecha_hora_consulta %}
+                    {{ h.fecha_hora_consulta|date:"d/m/Y" }}
+                {% else %}—{% endif %}
+            </td>
+            <td>{{ h.tipo_contacto|default:"—" }}</td>
+            <td>
+                {% if h.tipo_agente %}
+                    <span class="tipo-agente-badge">{{ h.tipo_agente.nombre }}</span>
+                {% endif %}
+                {% if h.agente_principio_activo %}
+                    <br><small>{{ h.agente_principio_activo|truncatechars:30 }}</small>
+                {% endif %}
+            </td>
+            <td>
+                {% if h.severidad %}
+                <span class="severidad-badge severidad-{{ h.severidad.codigo }}">
+                    {{ h.severidad.nombre }}
+                </span>
+                {% else %}—{% endif %}
+            </td>
+            <td>{{ h.evolucion|default:"—" }}</td>
+            <td>
+                <small>{{ h.usuario_captura|default:"—" }}</small>
+            </td>
+            <td class="acciones-celda">
+                <a href="{% url 'detalle_historia' h.pk %}" class="btn-tabla">Ver</a>
+                <a href="{% url 'editar_historia' h.pk %}" class="btn-tabla">Editar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{# ── Paginación ── #}
+{% if historias.has_other_pages %}
+<div class="paginacion">
+    {% if historias.has_previous %}
+    <a href="?{{ request.GET.urlencode }}&pagina={{ historias.previous_page_number }}"
+       class="pag-btn">&laquo; Anterior</a>
+    {% endif %}
+
+    <span class="pag-info">
+        Página {{ historias.number }} de {{ historias.paginator.num_pages }}
+    </span>
+
+    {% if historias.has_next %}
+    <a href="?{{ request.GET.urlencode }}&pagina={{ historias.next_page_number }}"
+       class="pag-btn">Siguiente &raquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="sin-resultados">
+    {% if hay_filtros %}
+        <p>No se encontraron historias con los filtros aplicados.</p>
+        <a href="{% url 'listado_historias' %}" class="btn-secundario">Ver todos</a>
+    {% else %}
+        <p>Aún no hay historias clínicas registradas.</p>
+        <a href="{% url 'nueva_historia' %}" class="btn-primario">Capturar primera historia</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
