@@ -259,6 +259,20 @@ class HistoriaClinicaForm(forms.ModelForm):
             except (ValueError, TypeError):
                 pass
 
+        # Precargar tratamientos A y B cuando se edita un registro existente
+        # (estos campos no están en el modelo directamente, hay que cargarlos a mano)
+        if self.instance.pk:
+            ids_a = list(
+                self.instance.tratamientos_detalle
+                .filter(columna='A').values_list('tratamiento_id', flat=True)
+            )
+            ids_b = list(
+                self.instance.tratamientos_detalle
+                .filter(columna='B').values_list('tratamiento_id', flat=True)
+            )
+            self.initial.setdefault('tratamiento_a', ids_a)
+            self.initial.setdefault('tratamiento_b', ids_b)
+
         # folio_expediente es obligatorio
         self.fields['folio_expediente'].required = True
         self.fields['fecha_hora_consulta'].required = True
@@ -277,12 +291,30 @@ class HistoriaClinicaForm(forms.ModelForm):
         fecha_consulta = cleaned.get('fecha_hora_consulta')
         fecha_evento   = cleaned.get('fecha_hora_evento_exposicion')
 
-        # Si es presencial, la fecha de ingreso es obligatoria
-        if tipo_contacto and tipo_contacto.nombre == 'Exposición (presencial)':
+        nombre_contacto = tipo_contacto.nombre if tipo_contacto else ''
+
+        if nombre_contacto == 'Exposición (presencial)':
+            # Fecha de ingreso obligatoria para presenciales
             if not fecha_ingreso:
                 self.add_error(
                     'fecha_hora_ingreso',
                     'La fecha de ingreso es obligatoria para consultas presenciales.'
+                )
+            # Subtipo presencial obligatorio
+            if not subtipo:
+                self.add_error(
+                    'subtipo_presencial',
+                    'El subtipo es obligatorio para consultas presenciales (Urgencias, Internación, etc.).'
+                )
+
+        if nombre_contacto == 'Telefónico':
+            # Para consultas telefónicas se requiere al menos nombre o categoría del interlocutor
+            interlocutor_nombre    = cleaned.get('interlocutor_nombre', '').strip()
+            interlocutor_categoria = cleaned.get('interlocutor_categoria')
+            if not interlocutor_nombre and not interlocutor_categoria:
+                self.add_error(
+                    'interlocutor_nombre',
+                    'Para consultas telefónicas se requiere al menos el nombre o categoría del interlocutor.'
                 )
 
         # La fecha de exposición no puede ser posterior a la consulta

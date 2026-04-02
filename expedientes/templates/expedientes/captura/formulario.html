@@ -323,6 +323,8 @@
                         <span class="col-ab">A (Previo)</span>
                         <span class="col-ab">B (Recomendado)</span>
                     </div>
+                    {# ids_a e ids_b son sets de enteros pasados desde la vista.
+                       Funcionan tanto en GET (carga inicial/edición) como en POST fallido. #}
                     {% for tratamiento in form.tratamiento_a.field.queryset %}
                     <div class="tratamiento-fila">
                         <span class="col-nombre">{{ tratamiento.nombre }}</span>
@@ -331,14 +333,14 @@
                                    name="tratamiento_a"
                                    value="{{ tratamiento.pk }}"
                                    id="ta_{{ tratamiento.pk }}"
-                                   {% if tratamiento in form.tratamiento_a.value %}checked{% endif %}>
+                                   {% if tratamiento.pk in ids_a %}checked{% endif %}>
                         </span>
                         <span class="col-ab">
                             <input type="checkbox"
                                    name="tratamiento_b"
                                    value="{{ tratamiento.pk }}"
                                    id="tb_{{ tratamiento.pk }}"
-                                   {% if tratamiento in form.tratamiento_b.value %}checked{% endif %}>
+                                   {% if tratamiento.pk in ids_b %}checked{% endif %}>
                         </span>
                     </div>
                     {% endfor %}
@@ -427,10 +429,9 @@
 {% endblock %}
 
 {% block scripts_extra %}
+{% load static %}
 <script>
-    // Pasar la URL del endpoint AJAX a JavaScript
     const URL_CIRCUNSTANCIAS_N2 = "{% url 'circunstancias_nivel2' %}";
 </script>
-<script src="{% static 'js/formulario.js' %}">
-</script>
+<script src="{% static 'js/formulario.js' %}"></script>
 {% endblock %}
