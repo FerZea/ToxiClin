@@ -228,6 +228,7 @@ class EdicionPermisoTest(TestCase):
 
         self.client.login(username='cap1_t', password='cap1234test')
         data = post_presencial_valido(self.cats)
+        data['tratamiento_a'] = [str(trat.pk)]  # incluir el tratamiento en el POST
         self.client.post(f'/historias/{self.historia.pk}/editar/', data)
         self.historia.refresh_from_db()
 
@@ -376,9 +377,10 @@ class EstadisticasStressTest(TestCase):
             'tipo_grafica': 'barras_agrupadas'
         })
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('grupos_cruce', resp.context)
-        self.assertIn('filas_cruce', resp.context)
-        self.assertTrue(resp.context['resultados'][0]['es_cruce'])
+        resultado_cruce = resp.context['resultados'][0]
+        self.assertTrue(resultado_cruce['es_cruce'])
+        self.assertIn('grupos_cruce', resultado_cruce)
+        self.assertIn('filas_cruce', resultado_cruce)
 
     # ── Exportación ──────────────────────────────────────────────────────────
 
