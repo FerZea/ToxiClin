@@ -238,8 +238,11 @@ ToxiClin/
 
 ---
 
-## Desarrollador
+## Desarrolladores
 
 **Fernando Escobar Jaramillo**
 Estudiante de Ingeniería en Sistemas Inteligentes — UASLP
 San Luis Potosí, México
+
+**Sebastián de Jesús Hernández**
+Colaborador — [@SebastianDeJesusHdz2](https://github.com/SebastianDeJesusHdz2)
