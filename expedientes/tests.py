@@ -376,9 +376,10 @@ class EstadisticasStressTest(TestCase):
             'tipo_grafica': 'barras_agrupadas'
         })
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('grupos_cruce', resp.context)
-        self.assertIn('filas_cruce', resp.context)
-        self.assertTrue(resp.context['resultados'][0]['es_cruce'])
+        primer_resultado = resp.context['resultados'][0]
+        self.assertIn('grupos_cruce', primer_resultado)
+        self.assertIn('filas_cruce', primer_resultado)
+        self.assertTrue(primer_resultado['es_cruce'])
 
     # ── Exportación ──────────────────────────────────────────────────────────
 
@@ -409,4 +410,4 @@ class EstadisticasStressTest(TestCase):
             'variable': 'invalida',
             'formato': 'png'
         })
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)

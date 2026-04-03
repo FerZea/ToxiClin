@@ -83,9 +83,15 @@ def editar_historia(request, pk):
             historia = form.save(commit=False)
             historia.save()
             form.save_m2m()
-            # Reemplazar tratamientos solo si el formulario fue válido
-            historia.tratamientos_detalle.all().delete()
-            _guardar_tratamientos(historia, form)
+            # Reemplazar tratamientos solo si vienen en el POST
+            # (evita borrar si se hace un post parcial o hay errores de widget)
+            if 'tratamiento_a' in request.POST or 'tratamiento_a' in form.errors:
+                 historia.tratamientos_detalle.filter(columna='A').delete()
+                 _guardar_tratamientos_columna(historia, form, 'A')
+
+            if 'tratamiento_b' in request.POST or 'tratamiento_b' in form.errors:
+                 historia.tratamientos_detalle.filter(columna='B').delete()
+                 _guardar_tratamientos_columna(historia, form, 'B')
 
             messages.success(request, f'Historia clínica #{historia.consulta_numero} actualizada.')
             return redirect('detalle_historia', pk=historia.pk)
@@ -114,30 +120,26 @@ def editar_historia(request, pk):
     })
 
 
+def _guardar_tratamientos_columna(historia, form, columna):
+    """Guarda los tratamientos de una columna específica (A/B)."""
+    field_name = f'tratamiento_{columna.lower()}'
+    especificar_field = f'tratamiento_{columna.lower()}_especificar'
+    
+    especificar_texto = form.cleaned_data.get(especificar_field, '')
+    
+    for tratamiento in form.cleaned_data.get(field_name, []):
+        HistoriaClinicaTratamiento.objects.create(
+            historia=historia,
+            tratamiento=tratamiento,
+            columna=columna,
+            especificar=especificar_texto if tratamiento.requiere_especificar else ''
+        )
+
+
 def _guardar_tratamientos(historia, form):
-    """
-    Guarda los tratamientos A y B en la tabla intermedia.
-    Se llama después de haber borrado los anteriores (en edición)
-    o desde cero (en creación).
-    """
-    especificar_a = form.cleaned_data.get('tratamiento_a_especificar', '')
-    especificar_b = form.cleaned_data.get('tratamiento_b_especificar', '')
-
-    for tratamiento in form.cleaned_data.get('tratamiento_a', []):
-        HistoriaClinicaTratamiento.objects.create(
-            historia=historia,
-            tratamiento=tratamiento,
-            columna='A',
-            especificar=especificar_a if tratamiento.requiere_especificar else ''
-        )
-
-    for tratamiento in form.cleaned_data.get('tratamiento_b', []):
-        HistoriaClinicaTratamiento.objects.create(
-            historia=historia,
-            tratamiento=tratamiento,
-            columna='B',
-            especificar=especificar_b if tratamiento.requiere_especificar else ''
-        )
+    """Guarda ambas columnas (A y B)."""
+    _guardar_tratamientos_columna(historia, form, 'A')
+    _guardar_tratamientos_columna(historia, form, 'B')
 
 
 @login_requerido
