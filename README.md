@@ -1,19 +1,6 @@
 # ToxiClin
 
-Sistema de Gestión de Expedientes Clínicos Toxicológicos para el **Centro de Información y Atención Toxicológica (CIAT)** del Hospital Central "Dr. Ignacio Morones Prieto", San Luis Potosí, México.
-
----
-
-## Descripción
-
-ToxiClin reemplaza el registro en Excel de historias clínicas toxicológicas por una aplicación web local que replica exactamente la ficha CIAT/REDARTOX. El sistema corre en la computadora del CIAT y se accede desde el navegador (`localhost`) — **no requiere internet**.
-
-### Usuarios
-
-| Rol | Descripción |
-|---|---|
-| **Administrador** (Dra. Evelyn, Dra. Susana) | Acceso total: gestión de usuarios, estadísticas, respaldos y bitácora |
-| **Capturista** (alumnos rotantes) | Solo captura y consulta de historias clínicas |
+Aplicación web local para la gestión de expedientes clínicos toxicológicos. Reemplaza el registro en Excel por un sistema con formulario estructurado, filtros, estadísticas y respaldos cifrados. Corre completamente en local — **no requiere internet**.
 
 ---
 
@@ -67,10 +54,7 @@ python manage.py cargar_catalogos
 # 6. (Opcional) Cargar datos de ejemplo para demostración
 python manage.py crear_datos_ejemplo
 
-# O generar más volumen de prueba
-python manage.py crear_datos_ejemplo --cantidad 100
-
-# 7. Crear superusuario (administrador técnico)
+# 7. Crear superusuario administrador
 python manage.py createsuperuser
 
 # 8. Correr el servidor
@@ -78,6 +62,16 @@ python manage.py runserver
 ```
 
 Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
+
+### Arranque automático en Windows
+
+Para que ToxiClin se inicie cada vez que enciende la computadora, ejecutar **una sola vez** como administrador:
+
+```
+instalar_inicio_windows.bat
+```
+
+Después de eso el servidor arranca solo en cada inicio de sesión. Para detenerlo permanentemente: Panel de control → Programas de inicio → desactivar `ToxiClin`.
 
 ### Usuarios de demostración (después de `crear_datos_ejemplo`)
 
@@ -91,7 +85,7 @@ Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
 ## Funcionalidades implementadas
 
 ### Captura de historias clínicas (Fase 3)
-- Formulario completo que replica la ficha CIAT/REDARTOX
+- Formulario completo que replica la ficha REDARTOX
 - Cálculo automático de edad (días / meses / años) y latencia
 - Dropdowns dependientes: circunstancia nivel 1 → nivel 2
 - Mostrar/ocultar campos según tipo de consulta (presencial / telefónico)
@@ -115,15 +109,16 @@ Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
 ### Respaldos cifrados (Fase 7)
 - Exportar la base de datos completa como archivo `.toxiclin` cifrado con PBKDF2-SHA256 + Fernet
 - Restaurar desde respaldo cifrado con verificación de contraseña
+- Descarga inmediata desde la lista de respaldos locales
 - Recordatorio automático en el dashboard si llevan ≥7 días sin respaldar
-- Historial de respaldos locales en `backups/`
+- Historial de respaldos en carpeta `backups/`
 
 ### Bitácora de actividad (Fase 7)
 - Registro automático de: login, logout, captura, edición, respaldo y restauración
-- Vista de los últimos 500 eventos (solo administradoras)
+- Vista de los últimos 500 eventos (solo administradores)
 
 ### Gestión de usuarios (Fase 2)
-- Crear, editar y desactivar usuarios capturistas
+- Crear, editar y desactivar usuarios
 - Cambiar contraseña desde panel de administración
 - Dos roles: Administrador y Capturista
 
@@ -161,14 +156,15 @@ python manage.py test expedientes
 ToxiClin/
 ├── manage.py
 ├── requirements.txt
-├── Requisitos_CIAT_v2.md          # Especificación funcional completa
+├── iniciar_toxiclin.bat            # Script de arranque para Windows
+├── instalar_inicio_windows.bat     # Instalador de inicio automático (Windows)
 ├── toxiclin/                       # Configuración del proyecto Django
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
 ├── expedientes/                    # App principal
 │   ├── models/
-│   │   ├── catalogos.py            # 17 catálogos CIAT/REDARTOX
+│   │   ├── catalogos.py            # 17 catálogos REDARTOX
 │   │   ├── historia.py             # Modelo principal HistoriaClinica
 │   │   └── sistema.py              # ConfigSistema + RegistroActividad
 │   ├── views/
@@ -190,16 +186,16 @@ ToxiClin/
 │   │   ├── estadisticas/           # graficas.html
 │   │   └── admin/                  # usuarios, respaldos, actividad, importar_excel
 │   ├── templates/
-│   │   ├── 404.html                # Página de error 404
-│   │   └── 500.html                # Página de error 500
+│   │   ├── 404.html
+│   │   └── 500.html
 │   ├── static/
-│   │   ├── css/estilos.css         # Estilos + responsive
-│   │   └── js/formulario.js        # Lógica dinámica del formulario
+│   │   ├── css/estilos.css
+│   │   └── js/formulario.js
 │   ├── management/commands/
-│   │   ├── cargar_catalogos.py     # Carga inicial de catálogos REDARTOX
-│   │   └── crear_datos_ejemplo.py  # 20 casos clínicos de muestra
-│   ├── graficas.py                 # Generación de gráficas matplotlib
-│   ├── decoradores.py              # @login_requerido, @solo_admin
+│   │   ├── cargar_catalogos.py
+│   │   └── crear_datos_ejemplo.py
+│   ├── graficas.py
+│   ├── decoradores.py
 │   └── tests.py                    # 36 pruebas automatizadas
 ├── backups/                        # Respaldos cifrados (no en git)
 └── media/                          # Gráficas exportadas (no en git)
@@ -217,7 +213,7 @@ ToxiClin/
 | **Fase 3** | Formulario de captura completo | ✅ Completa |
 | **Fase 4** | Filtrado, búsqueda y paginación | ✅ Completa |
 | **Fase 5** | Estadísticas, gráficas y dashboard | ✅ Completa |
-| **Fase 6** | Migración desde Excel (~1,500 registros) | ⏳ Pendiente (requiere archivo Excel) |
+| **Fase 6** | Migración desde Excel | ⏳ Pendiente |
 | **Fase 7** | Respaldos cifrados, bitácora, recordatorio | ✅ Completa |
 | **Fase 8** | Pulido, responsive, páginas de error | ✅ Completa |
 
@@ -228,7 +224,7 @@ ToxiClin/
 - **Sin internet**: cero conexiones externas, sin CDN, sin Google Fonts, sin telemetría
 - **Sin Docker**: instalación simple con `pip install -r requirements.txt`
 - **SQLite**: no requiere instalar servidor de base de datos
-- **Windows 10**: compatible, paths con `pathlib`, servidor `waitress` para producción local
+- **Windows 10 compatible**: paths con `pathlib`, servidor `waitress` para producción local
 - **Datos confidenciales**: respaldos cifrados con PBKDF2-SHA256 + Fernet (AES-128-CBC)
 
 ---
@@ -247,9 +243,3 @@ ToxiClin/
 **Fernando Escobar Jaramillo**
 Estudiante de Ingeniería en Sistemas Inteligentes — UASLP
 San Luis Potosí, México
-
----
-
-## Licencia
-
-Uso interno del CIAT — Hospital Central "Dr. Ignacio Morones Prieto". Todos los derechos reservados.

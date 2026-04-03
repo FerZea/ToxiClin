@@ -266,10 +266,12 @@ def crear_respaldo(request):
     )
     ConfigSistema.set('ultimo_respaldo', datetime.now().isoformat())
 
-    # Enviar como descarga
-    response = HttpResponse(contenido, content_type='application/octet-stream')
-    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
-    return response
+    messages.success(
+        request,
+        f'Respaldo "{nombre_archivo}" generado correctamente. '
+        'Descárgalo desde la tabla de abajo.'
+    )
+    return redirect('respaldos')
 
 
 @login_requerido
@@ -350,6 +352,31 @@ def restaurar_respaldo(request):
         '(Ctrl+C → python manage.py runserver) para que los cambios surtan efecto.'
     )
     return redirect('respaldos')
+
+
+# ─── Descarga de respaldo local ──────────────────────────────────────────────
+
+@login_requerido
+@solo_admin
+def descargar_respaldo(request, nombre):
+    """Envía al navegador un archivo .toxiclin guardado localmente."""
+    # Sanitizar: solo permitir nombre de archivo sin rutas para evitar path traversal
+    nombre = os.path.basename(nombre)
+    if not nombre.endswith('.toxiclin'):
+        messages.error(request, 'Nombre de archivo no válido.')
+        return redirect('respaldos')
+
+    ruta = os.path.join(settings.BASE_DIR, 'backups', nombre)
+    if not os.path.exists(ruta):
+        messages.error(request, 'El archivo no existe.')
+        return redirect('respaldos')
+
+    with open(ruta, 'rb') as f:
+        contenido = f.read()
+
+    response = HttpResponse(contenido, content_type='application/octet-stream')
+    response['Content-Disposition'] = f'attachment; filename="{nombre}"'
+    return response
 
 
 # ─── Importación Excel (stub Fase 6) ─────────────────────────────────────────

@@ -23,7 +23,10 @@
 {# ─── Generar respaldo ─────────────────────────────────────────────── #}
 <section class="tarjeta" style="max-width:520px; margin-bottom:2rem;">
     <h2>Generar respaldo cifrado</h2>
-    <p>Se descargará un archivo <code>.toxiclin</code> cifrado con tu contraseña.</p>
+    <p>
+        El archivo <code>.toxiclin</code> se guardará en la carpeta <code>backups/</code>
+        y aparecerá en la tabla de abajo para descargarlo cuando quieras.
+    </p>
     <form method="post" action="{% url 'crear_respaldo' %}">
         {% csrf_token %}
         <div class="campo-form">
@@ -31,7 +34,7 @@
             <input type="password" id="pass-backup" name="password"
                    placeholder="Contraseña" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn btn-primario">Descargar respaldo cifrado</button>
+        <button type="submit" class="btn btn-primario">Generar respaldo cifrado</button>
     </form>
 </section>
 
@@ -72,6 +75,7 @@
                 <th>Archivo</th>
                 <th>Fecha</th>
                 <th>Tamaño</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -80,6 +84,12 @@
                 <td><code>{{ archivo.nombre }}</code></td>
                 <td>{{ archivo.fecha|date:"d/m/Y H:i" }}</td>
                 <td>{{ archivo.tamano_kb }} KB</td>
+                <td>
+                    <a href="{% url 'descargar_respaldo' archivo.nombre %}"
+                       class="btn btn-secundario" style="padding:.3rem .8rem;font-size:.85rem;">
+                        Descargar
+                    </a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

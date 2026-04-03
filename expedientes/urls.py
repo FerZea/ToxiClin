@@ -3,7 +3,8 @@ from expedientes.views.auth import vista_login, vista_logout
 from expedientes.views.inicio import dashboard
 from expedientes.views.admin_custom import (
     lista_usuarios, crear_usuario, editar_usuario, cambiar_contrasena,
-    respaldos, crear_respaldo, restaurar_respaldo, actividad, importar_excel,
+    respaldos, crear_respaldo, restaurar_respaldo, descargar_respaldo,
+    actividad, importar_excel,
 )
 from expedientes.views.captura import (
     nueva_historia, editar_historia, circunstancias_nivel2
@@ -44,6 +45,7 @@ urlpatterns = [
     path('admin-ciat/respaldos/', respaldos, name='respaldos'),
     path('admin-ciat/respaldos/crear/', crear_respaldo, name='crear_respaldo'),
     path('admin-ciat/respaldos/restaurar/', restaurar_respaldo, name='restaurar_respaldo'),
+    path('admin-ciat/respaldos/descargar/<str:nombre>/', descargar_respaldo, name='descargar_respaldo'),
 
     # Bitácora de actividad (RF-35)
     path('admin-ciat/actividad/', actividad, name='actividad'),

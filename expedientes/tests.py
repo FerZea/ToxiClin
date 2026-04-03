@@ -542,8 +542,8 @@ class RespaldosTest(TestCase):
         resp = self.client.post(reverse('crear_respaldo'), {'password': 'INCORRECTA'})
         self.assertRedirects(resp, reverse('respaldos'))
 
-    def test_crear_respaldo_genera_descarga(self):
-        """Con contraseña correcta se descarga un archivo binario .toxiclin."""
+    def test_crear_respaldo_guarda_archivo(self):
+        """Con contraseña correcta, el respaldo se guarda localmente y redirige."""
         import tempfile, os
         from unittest.mock import patch
 
@@ -567,11 +567,8 @@ class RespaldosTest(TestCase):
         finally:
             os.unlink(db_temp)
 
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp['Content-Type'], 'application/octet-stream')
-        self.assertIn('.toxiclin', resp['Content-Disposition'])
-        # El archivo debe tener: 16 bytes de salt + datos cifrados Fernet
-        self.assertGreater(len(resp.content), 100)
+        # Ahora redirige a la página de respaldos para mostrar el archivo creado
+        self.assertRedirects(resp, reverse('respaldos'))
 
     def test_restaurar_contrasena_incorrecta(self):
         """Restaurar con contraseña incorrecta rechaza la operación."""
