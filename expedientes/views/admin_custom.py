@@ -12,7 +12,9 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User, Group
+from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
+from django.db import connections
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
@@ -334,7 +336,11 @@ def restaurar_respaldo(request):
     with open(db_path, 'wb') as f:
         f.write(datos_db)
 
-    # Registrar en la bitácora (ya con la BD restaurada activa)
+    # Cerrar todas las conexiones abiertas a SQLite para que el siguiente
+    # request use la BD recién restaurada sin necesidad de reiniciar el servidor.
+    connections.close_all()
+
+    # Registrar en la bitácora con la BD ya restaurada
     try:
         RegistroActividad.objects.create(
             usuario=request.user,
@@ -345,13 +351,15 @@ def restaurar_respaldo(request):
     except Exception:
         pass  # Si la BD restaurada tiene estructura diferente, no interrumpir
 
+    # Cerrar la sesión actual: la sesión del usuario ya no existe en la BD
+    # restaurada, así que lo llevamos al login con el mensaje de éxito.
+    auth_logout(request)
     messages.success(
         request,
-        '✓ Base de datos restaurada. '
-        'IMPORTANTE: detén y vuelve a iniciar el servidor '
-        '(Ctrl+C → python manage.py runserver) para que los cambios surtan efecto.'
+        'Base de datos restaurada correctamente desde '
+        f'"{archivo.name}". Inicia sesión para continuar.'
     )
-    return redirect('respaldos')
+    return redirect('login')
 
 
 # ─── Descarga de respaldo local ──────────────────────────────────────────────
