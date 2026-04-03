@@ -412,3 +412,221 @@ class EstadisticasStressTest(TestCase):
             'formato': 'png'
         })
         self.assertEqual(resp.status_code, 404)
+
+
+# ─── Tests de Fase 7: respaldos, bitácora y ConfigSistema ────────────────────
+
+class ConfigSistemaTest(TestCase):
+    """Verifica el funcionamiento del modelo ConfigSistema (clave-valor)."""
+
+    def test_set_y_get(self):
+        """set() guarda el valor y get() lo recupera."""
+        from expedientes.models import ConfigSistema
+        ConfigSistema.set('prueba_clave', 'hola mundo')
+        self.assertEqual(ConfigSistema.get('prueba_clave'), 'hola mundo')
+
+    def test_get_default_si_no_existe(self):
+        """get() devuelve el default cuando la clave no existe."""
+        from expedientes.models import ConfigSistema
+        self.assertIsNone(ConfigSistema.get('no_existe'))
+        self.assertEqual(ConfigSistema.get('no_existe', 'fallback'), 'fallback')
+
+    def test_set_sobreescribe(self):
+        """set() actualiza el valor si la clave ya existe."""
+        from expedientes.models import ConfigSistema
+        ConfigSistema.set('clave', 'valor1')
+        ConfigSistema.set('clave', 'valor2')
+        self.assertEqual(ConfigSistema.get('clave'), 'valor2')
+        # Solo debe haber un registro, no dos
+        self.assertEqual(ConfigSistema.objects.filter(clave='clave').count(), 1)
+
+
+class RegistroActividadTest(TestCase):
+    """
+    Verifica que las acciones importantes queden registradas
+    automáticamente en la bitácora.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        crear_catalogos()
+        self.admin, self.cap1, _ = crear_usuarios()
+
+    def test_login_registra_actividad(self):
+        """Un login exitoso crea un RegistroActividad con accion='login'."""
+        from expedientes.models import RegistroActividad
+        antes = RegistroActividad.objects.filter(accion='login').count()
+        # Postear al formulario de login (no usar client.login, que evita la vista)
+        self.client.post(reverse('login'), {
+            'username': 'admin_t',
+            'password': 'admin1234test',
+        })
+        despues = RegistroActividad.objects.filter(accion='login').count()
+        self.assertEqual(despues, antes + 1)
+
+    def test_logout_registra_actividad(self):
+        """Un logout crea un RegistroActividad con accion='logout'."""
+        from expedientes.models import RegistroActividad
+        # force_login: establece sesión sin pasar por la vista (autenticación no es lo que se prueba)
+        self.client.force_login(self.admin)
+        antes = RegistroActividad.objects.filter(accion='logout').count()
+        self.client.get(reverse('logout'))
+        despues = RegistroActividad.objects.filter(accion='logout').count()
+        self.assertEqual(despues, antes + 1)
+
+    def test_captura_registra_actividad(self):
+        """Guardar una historia nueva crea un RegistroActividad con accion='captura'."""
+        from expedientes.models import RegistroActividad
+        self.client.login(username='cap1_t', password='cap1234test')
+        cats = crear_catalogos()
+        antes = RegistroActividad.objects.filter(accion='captura').count()
+        self.client.post('/historias/nueva/', post_presencial_valido(cats))
+        despues = RegistroActividad.objects.filter(accion='captura').count()
+        self.assertEqual(despues, antes + 1)
+
+    def test_edicion_registra_actividad(self):
+        """Editar una historia crea un RegistroActividad con accion='edicion'."""
+        from expedientes.models import RegistroActividad
+        cats = crear_catalogos()
+        ahora = timezone.now()
+        historia = HistoriaClinica.objects.create(
+            folio_expediente='ACT-001',
+            tipo_contacto=cats['presencial'],
+            motivo_consulta=cats['intoxicacion'],
+            subtipo_presencial=cats['urgencias'],
+            fecha_hora_consulta=ahora,
+            fecha_hora_ingreso=ahora,
+            usuario_captura=self.cap1,
+            consulta_numero=200,
+        )
+        self.client.login(username='cap1_t', password='cap1234test')
+        antes = RegistroActividad.objects.filter(accion='edicion').count()
+        self.client.post(f'/historias/{historia.pk}/editar/', post_presencial_valido(cats))
+        despues = RegistroActividad.objects.filter(accion='edicion').count()
+        self.assertEqual(despues, antes + 1)
+
+    def test_vista_actividad_solo_admin(self):
+        """La bitácora es visible para admins y bloqueada para capturistas."""
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('actividad'))
+        self.assertEqual(resp.status_code, 200)
+
+        self.client.force_login(self.cap1)
+        resp = self.client.get(reverse('actividad'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+
+class RespaldosTest(TestCase):
+    """
+    Verifica el flujo de creación y restauración de respaldos cifrados.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        crear_catalogos()
+        self.admin, self.cap1, _ = crear_usuarios()
+
+    def test_pagina_respaldos_solo_admin(self):
+        """La página de respaldos es accesible para admins y bloqueada para capturistas."""
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('respaldos'))
+        self.assertEqual(resp.status_code, 200)
+
+        self.client.force_login(self.cap1)
+        resp = self.client.get(reverse('respaldos'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_crear_respaldo_contrasena_incorrecta(self):
+        """Una contraseña incorrecta no genera el respaldo."""
+        self.client.force_login(self.admin)
+        resp = self.client.post(reverse('crear_respaldo'), {'password': 'INCORRECTA'})
+        self.assertRedirects(resp, reverse('respaldos'))
+
+    def test_crear_respaldo_genera_descarga(self):
+        """Con contraseña correcta se descarga un archivo binario .toxiclin."""
+        import tempfile, os
+        from unittest.mock import patch
+
+        self.client.force_login(self.admin)
+
+        # En tests, el DB es en memoria y no tiene ruta de archivo real.
+        # Creamos un SQLite temporal para que la vista pueda leerlo como archivo.
+        with tempfile.NamedTemporaryFile(suffix='.sqlite3', delete=False) as tmp:
+            tmp.write(b'SQLite format 3\x00' + b'\x00' * 500)
+            db_temp = tmp.name
+
+        try:
+            with patch.object(
+                __import__('django.conf', fromlist=['settings']).settings,
+                'DATABASES',
+                {'default': {'NAME': db_temp}},
+            ):
+                resp = self.client.post(
+                    reverse('crear_respaldo'), {'password': 'admin1234test'}
+                )
+        finally:
+            os.unlink(db_temp)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/octet-stream')
+        self.assertIn('.toxiclin', resp['Content-Disposition'])
+        # El archivo debe tener: 16 bytes de salt + datos cifrados Fernet
+        self.assertGreater(len(resp.content), 100)
+
+    def test_restaurar_contrasena_incorrecta(self):
+        """Restaurar con contraseña incorrecta rechaza la operación."""
+        import io
+        self.client.force_login(self.admin)
+        # Primero generamos un respaldo real
+        resp_backup = self.client.post(
+            reverse('crear_respaldo'), {'password': 'admin1234test'}
+        )
+        archivo = io.BytesIO(resp_backup.content)
+        archivo.name = 'respaldo.toxiclin'
+        resp = self.client.post(reverse('restaurar_respaldo'), {
+            'password': 'INCORRECTA',
+            'archivo': archivo,
+        })
+        self.assertRedirects(resp, reverse('respaldos'))
+
+    def test_restaurar_archivo_invalido(self):
+        """Un archivo que no es un respaldo válido es rechazado."""
+        import io
+        self.client.force_login(self.admin)
+        archivo = io.BytesIO(b'esto no es un respaldo')
+        archivo.name = 'basura.toxiclin'
+        resp = self.client.post(reverse('restaurar_respaldo'), {
+            'password': 'admin1234test',
+            'archivo': archivo,
+        })
+        self.assertRedirects(resp, reverse('respaldos'))
+
+
+# ─── Tests de Fase 8: stub Excel, páginas de error ───────────────────────────
+
+class PulidoTest(TestCase):
+    """Verifica el stub de importación Excel y las páginas de error."""
+
+    def setUp(self):
+        self.client = Client()
+        crear_catalogos()
+        self.admin, self.cap1, _ = crear_usuarios()
+
+    def test_importar_excel_stub_admin(self):
+        """La página de importar Excel es accesible para admins."""
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('importar_excel'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'próximamente')
+
+    def test_importar_excel_stub_capturista(self):
+        """La página de importar Excel bloquea a capturistas."""
+        self.client.force_login(self.cap1)
+        resp = self.client.get(reverse('importar_excel'))
+        self.assertRedirects(resp, reverse('dashboard'))
+
+    def test_url_inexistente_devuelve_404(self):
+        """Una URL que no existe devuelve 404."""
+        self.client.force_login(self.admin)
+        resp = self.client.get('/ruta/que/no/existe/')
+        self.assertEqual(resp.status_code, 404)
