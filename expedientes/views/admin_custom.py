@@ -352,6 +352,18 @@ def restaurar_respaldo(request):
     return redirect('respaldos')
 
 
+# ─── Importación Excel (stub Fase 6) ─────────────────────────────────────────
+
+@login_requerido
+@solo_admin
+def importar_excel(request):
+    """
+    RF-28/RF-29: Stub para la importación desde Excel.
+    La funcionalidad real se implementará cuando se disponga del archivo Excel del CIAT.
+    """
+    return render(request, 'expedientes/admin/importar_excel.html')
+
+
 # ─── Bitácora de actividad ────────────────────────────────────────────────────
 
 @login_requerido

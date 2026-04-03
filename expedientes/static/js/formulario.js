@@ -247,3 +247,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 });
+
+
+// ─── Mensajes flash: botón de cierre y auto-cierre a los 6 segundos ────────
+(function () {
+    var contenedor = document.getElementById('mensajes-flash');
+    if (!contenedor) return;
+
+    // Botón ✕ en cada mensaje
+    contenedor.querySelectorAll('.mensaje-cerrar').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var msg = btn.closest('.mensaje');
+            if (msg) msg.remove();
+        });
+    });
+
+    // Auto-cierre: los mensajes de éxito desaparecen solos a los 6 s
+    setTimeout(function () {
+        contenedor.querySelectorAll('.mensaje-success, .mensaje-info').forEach(function (msg) {
+            msg.style.transition = 'opacity 0.5s';
+            msg.style.opacity = '0';
+            setTimeout(function () { msg.remove(); }, 500);
+        });
+    }, 6000);
+}());

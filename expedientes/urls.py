@@ -3,7 +3,7 @@ from expedientes.views.auth import vista_login, vista_logout
 from expedientes.views.inicio import dashboard
 from expedientes.views.admin_custom import (
     lista_usuarios, crear_usuario, editar_usuario, cambiar_contrasena,
-    respaldos, crear_respaldo, restaurar_respaldo, actividad,
+    respaldos, crear_respaldo, restaurar_respaldo, actividad, importar_excel,
 )
 from expedientes.views.captura import (
     nueva_historia, editar_historia, circunstancias_nivel2
@@ -47,4 +47,7 @@ urlpatterns = [
 
     # Bitácora de actividad (RF-35)
     path('admin-ciat/actividad/', actividad, name='actividad'),
+
+    # Importación desde Excel — stub Fase 6
+    path('admin-ciat/importar-excel/', importar_excel, name='importar_excel'),
 ]

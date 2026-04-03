@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Página no encontrada — ToxiClin</title>
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+</head>
+<body>
+<main class="contenido-principal" style="display:flex; align-items:center; justify-content:center; min-height:80vh;">
+    <div style="text-align:center; max-width:480px;">
+        <div style="font-size:4rem; color:#1a3a5c; font-weight:bold;">404</div>
+        <h1 style="color:#1a3a5c; margin-bottom:0.5rem;">Página no encontrada</h1>
+        <p style="color:#666; margin-bottom:2rem;">
+            La dirección que buscas no existe o fue movida.
+        </p>
+        <a href="/" class="btn-primario">Ir al inicio</a>
+    </div>
+</main>
+<footer class="pie-pagina">
+    <p>Centro de Información y Atención Toxicológica &mdash;
+       Hospital Central "Dr. Ignacio Morones Prieto", San Luis Potosí</p>
+</footer>
+</body>
+</html>

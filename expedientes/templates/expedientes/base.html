@@ -28,6 +28,7 @@
                 <li><a href="{% url 'lista_usuarios' %}">Gestión de usuarios</a></li>
                 <li><a href="{% url 'respaldos' %}">Respaldos</a></li>
                 <li><a href="{% url 'actividad' %}">Bitácora de actividad</a></li>
+                <li><a href="{% url 'importar_excel' %}">Importar desde Excel</a></li>
                 {# Admin Django solo para el superusuario técnico — no para las doctoras #}
                 {% if user.is_superuser %}
                 <li><a href="/admin/">Admin Django</a></li>
@@ -52,9 +53,12 @@
 
 <main class="contenido-principal">
     {% if messages %}
-    <div class="mensajes">
+    <div class="mensajes" id="mensajes-flash">
         {% for mensaje in messages %}
-        <div class="mensaje mensaje-{{ mensaje.tags }}">{{ mensaje }}</div>
+        <div class="mensaje mensaje-{{ mensaje.tags }}">
+            <span>{{ mensaje }}</span>
+            <button class="mensaje-cerrar" aria-label="Cerrar">&times;</button>
+        </div>
         {% endfor %}
     </div>
     {% endif %}

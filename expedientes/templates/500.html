@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Error del servidor — ToxiClin</title>
+    <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+</head>
+<body>
+<main class="contenido-principal" style="display:flex; align-items:center; justify-content:center; min-height:80vh;">
+    <div style="text-align:center; max-width:520px;">
+        <div style="font-size:4rem; color:#c0392b; font-weight:bold;">500</div>
+        <h1 style="color:#1a3a5c; margin-bottom:0.5rem;">Error interno del servidor</h1>
+        <p style="color:#666; margin-bottom:1rem;">
+            Ocurrió un error inesperado. Los datos no se perdieron.
+        </p>
+        <p style="color:#888; font-size:0.9rem; margin-bottom:2rem;">
+            Si el problema persiste, reinicia el servidor
+            (<code>Ctrl+C</code> → <code>python manage.py runserver</code>)
+            o contacta al responsable técnico.
+        </p>
+        <a href="/" class="btn-primario">Volver al inicio</a>
+    </div>
+</main>
+<footer class="pie-pagina">
+    <p>Centro de Información y Atención Toxicológica &mdash;
+       Hospital Central "Dr. Ignacio Morones Prieto", San Luis Potosí</p>
+</footer>
+</body>
+</html>

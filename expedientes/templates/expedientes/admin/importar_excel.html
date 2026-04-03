@@ -1,0 +1,43 @@
+{% extends "expedientes/base.html" %}
+{% block titulo %}Importar desde Excel — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="pagina-encabezado">
+    <h1>Importar desde Excel</h1>
+    <p class="texto-ayuda">
+        Migración de registros históricos desde el archivo Excel del CIAT.
+    </p>
+</div>
+
+<div class="tarjeta" style="max-width:600px;">
+    <div class="proximamente-icono">📋</div>
+    <h2 style="color:#1a3a5c; margin-bottom:0.5rem;">Función en desarrollo</h2>
+    <p style="color:#555; margin-bottom:1.5rem;">
+        Esta funcionalidad importará los ~1,500 registros históricos del Excel del CIAT,
+        mapeando automáticamente la codificación numérica a los catálogos del sistema.
+        Estará disponible cuando se proporcione el archivo Excel.
+    </p>
+
+    <div class="alerta alerta-info" style="margin-bottom:1.5rem;">
+        <strong>¿Qué hará esta función?</strong>
+        <ul style="margin-top:0.5rem; padding-left:1.2rem; font-size:0.9rem;">
+            <li>Leer el archivo Excel con los registros históricos</li>
+            <li>Mapear códigos numéricos a catálogos (ej. sexo 0=Femenino, 1=Masculino)</li>
+            <li>Generar un reporte: registros importados, errores y no mapeables</li>
+            <li>Permite re-ejecutarse sin duplicar registros ya importados</li>
+        </ul>
+    </div>
+
+    <div class="campo-form" style="margin-bottom:1rem;">
+        <label>Archivo Excel (.xlsx)</label>
+        <input type="file" disabled accept=".xlsx,.xls"
+               style="opacity:0.5; cursor:not-allowed;">
+    </div>
+
+    <button type="button" disabled
+            class="btn btn-primario"
+            style="opacity:0.5; cursor:not-allowed;">
+        Importar registros (próximamente)
+    </button>
+</div>
+{% endblock %}
