@@ -23,3 +23,10 @@ Thumbs.db
 # Archivos temporales del editor
 *.swp
 *.swo
+
+# Caché de matplotlib y herramientas externas
+.matplotlib/
+.codex
+
+# Documentos que no son parte del código
+*.pdf
