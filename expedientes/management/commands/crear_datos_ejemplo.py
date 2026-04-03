@@ -37,7 +37,28 @@ from expedientes.models import (
 class Command(BaseCommand):
     help = 'Crea datos de muestra para demostración y pruebas'
 
+    def add_arguments(self, parser):
+        # Permite usar el comando tanto para una demo pequeña (`20`) como
+        # para poblar la base con cientos de registros para probar filtros,
+        # paginación y gráficas sin editar código.
+        parser.add_argument(
+            '--cantidad',
+            type=int,
+            default=20,
+            help='Cantidad total de historias demo a asegurar en la base de datos.',
+        )
+
     def handle(self, *args, **options):
+        # `cantidad` no significa "crear exactamente N nuevas", sino "dejar la
+        # base con N historias DEMO-* en total". Si algunas ya existen, se omiten
+        # y solo se generan las faltantes.
+        cantidad = options['cantidad']
+        if cantidad < 1:
+            self.stdout.write(
+                self.style.ERROR('ERROR: --cantidad debe ser un entero mayor o igual a 1.')
+            )
+            return
+
         self.stdout.write('=' * 60)
         self.stdout.write('Iniciando carga de datos de ejemplo...')
         self.stdout.write('=' * 60)
@@ -52,8 +73,9 @@ class Command(BaseCommand):
         # Cargar todos los catálogos en variables locales para construir los casos
         cats = self._cargar_catalogos()
 
-        # Crear las 20 historias clínicas
-        self._crear_historias(admin_demo, cats)
+        # A partir de aquí el comando ya tiene todo lo necesario:
+        # usuarios, catálogos y la meta de registros a asegurar.
+        self._crear_historias(admin_demo, cats, cantidad)
 
         self.stdout.write('=' * 60)
         self.stdout.write(self.style.SUCCESS('¡Proceso completado!'))
@@ -335,9 +357,9 @@ class Command(BaseCommand):
     # Creación de las 20 historias clínicas
     # ─────────────────────────────────────────────────────────────────────
 
-    def _crear_historias(self, usuario, c):
+    def _crear_historias(self, usuario, c, cantidad):
         """
-        Crea 20 historias clínicas realistas para el contexto del CIAT,
+        Crea historias clínicas realistas para el contexto del CIAT,
         distribuidas en los últimos 12 meses.
         'c' es el diccionario de catálogos cargado por _cargar_catalogos().
         """
@@ -352,7 +374,7 @@ class Command(BaseCommand):
         # dias_atras: cuántos días antes de hoy ocurrió la consulta
         # latencia_horas: horas entre exposición y consulta/ingreso
 
-        casos = [
+        casos_base = [
             # ─── CASO 1 ───────────────────────────────────────────────────────
             # Niño de 2 años que ingirió medicamento de adulto (paracetamol)
             # Muy común en el CIAT: accidente doméstico infantil
@@ -1044,7 +1066,12 @@ class Command(BaseCommand):
             },
         ]
 
-        # Fecha base para distribuir casos en los últimos 12 meses
+        # `casos_base` contiene 20 escenarios clínicos curados a mano.
+        # Si el usuario pide más de 20 registros, `_expandir_casos()` fabrica
+        # variantes manteniendo la misma estructura clínica, pero con folios,
+        # fechas y etiquetas distintas para que el dataset crezca sin colisiones.
+        casos = self._expandir_casos(casos_base, cantidad)
+
         for i, caso in enumerate(casos):
             folio = caso['folio']
 
@@ -1055,6 +1082,10 @@ class Command(BaseCommand):
                 continue
 
             try:
+                # Primero se crea la historia principal. Después se agregan
+                # relaciones ManyToMany (vías y tratamientos), porque esas
+                # relaciones solo pueden asociarse una vez que la historia
+                # ya fue guardada y tiene PK.
                 historia = self._construir_historia(caso, usuario, i)
                 self._agregar_vias(historia, caso)
                 self._agregar_tratamientos(historia, caso)
@@ -1071,6 +1102,45 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'  Historias creadas:  {creadas}'))
         if omitidas:
             self.stdout.write(f'  Historias omitidas: {omitidas} (ya existían)')
+
+    def _expandir_casos(self, casos_base, cantidad):
+        """
+        Devuelve exactamente `cantidad` casos. Si se piden más de los casos base,
+        genera variantes con folios únicos para poder poblar la BD con más datos.
+        """
+        if cantidad <= len(casos_base):
+            return casos_base[:cantidad]
+
+        # Se parte de una copia superficial para no mutar la lista original.
+        # Eso permite que los 20 casos base sigan siendo el "molde" canónico
+        # del cual se derivan las variantes posteriores.
+        casos = [dict(caso) for caso in casos_base]
+        etiquetas_extra = [
+            'Variante norte', 'Variante centro', 'Variante sur', 'Seguimiento local',
+            'Consulta ampliada', 'Caso comunitario', 'Referencia externa', 'Revaloración',
+        ]
+
+        for indice in range(len(casos_base), cantidad):
+            # Se recicla uno de los casos base usando aritmética modular:
+            # 20 -> vuelve al caso 1, 21 -> caso 2, etc.
+            base = casos_base[indice % len(casos_base)]
+            variante_num = indice + 1
+            caso = dict(base)
+            dias_base = base.get('dias_atras', (indice % len(casos_base)) * 18)
+
+            # El folio nuevo evita choques por unicidad. Los ajustes de fecha y
+            # latencia distribuyen las variantes a lo largo del año para que
+            # las estadísticas temporales no queden totalmente concentradas.
+            caso['folio'] = f'DEMO-{variante_num:03d}'
+            caso['dias_atras'] = max(0, (dias_base + (indice * 11)) % 365)
+            caso['latencia_horas'] = max(0, ((base.get('latencia_horas', 2) + indice) % 24))
+            caso['comentario'] = (
+                f'{base.get("comentario", "")} '
+                f'[{etiquetas_extra[indice % len(etiquetas_extra)]} #{variante_num}]'
+            ).strip()
+            casos.append(caso)
+
+        return casos
 
     # ─────────────────────────────────────────────────────────────────────
     # Método auxiliar: construir y guardar la historia principal
@@ -1095,9 +1165,9 @@ class Command(BaseCommand):
         es_presencial = caso['tipo_contacto'] and 'presencial' in caso['tipo_contacto'].nombre.lower()
         fecha_ingreso = fecha_consulta if es_presencial else None
 
-        # El número de consulta se asigna automáticamente en el save() del modelo,
-        # pero necesitamos uno temporal para evitar colisiones en el unique constraint.
-        # Como el modelo usa order_by('-consulta_numero'), dejamos que lo calcule.
+        # `consulta_numero`, edad y latencia se calculan dentro del `save()`
+        # del modelo. Aquí solo alimentamos los datos crudos mínimos y dejamos
+        # que la lógica del modelo centralice esos cálculos.
 
         historia = HistoriaClinica(
             # Datos del paciente
@@ -1169,6 +1239,8 @@ class Command(BaseCommand):
         Asigna las vías de ingreso al ManyToMany.
         Filtra los None (por si algún catálogo no existe en la BD).
         """
+        # El filtrado evita intentar asociar valores nulos cuando un catálogo
+        # opcional no esté cargado o el caso no lo requiera.
         vias = [v for v in caso.get('vias', []) if v is not None]
         if vias:
             historia.vias_ingreso.set(vias)
@@ -1184,9 +1256,13 @@ class Command(BaseCommand):
         Filtra los None para no romper si el catálogo no existe.
         """
         for columna, clave in [('A', 'tratos_A'), ('B', 'tratos_B')]:
+            # Columna A = lo que recibió previamente el paciente.
+            # Columna B = lo que recomienda el CIAT.
             for trat, especificar in caso.get(clave, []):
                 if trat is None:
                     continue
+                # `get_or_create` vuelve el comando idempotente: si el mismo
+                # tratamiento ya estaba asociado en esa columna, no lo duplica.
                 HistoriaClinicaTratamiento.objects.get_or_create(
                     historia    = historia,
                     tratamiento = trat,

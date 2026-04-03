@@ -67,6 +67,9 @@ python manage.py cargar_catalogos
 # 6. (Opcional) Cargar datos de ejemplo para demostración
 python manage.py crear_datos_ejemplo
 
+# O generar más volumen de prueba
+python manage.py crear_datos_ejemplo --cantidad 100
+
 # 7. Crear superusuario (administrador técnico)
 python manage.py createsuperuser
 
