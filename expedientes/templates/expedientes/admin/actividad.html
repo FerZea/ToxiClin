@@ -1,0 +1,41 @@
+{% extends "expedientes/base.html" %}
+{% block titulo %}Bitácora de actividad — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="pagina-encabezado">
+    <h1>Bitácora de actividad</h1>
+    <p class="texto-ayuda">Últimos 500 eventos registrados en el sistema.</p>
+</div>
+
+{% if registros %}
+<table class="tabla-listado">
+    <thead>
+        <tr>
+            <th>Fecha y hora</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Descripción</th>
+            <th>IP</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for reg in registros %}
+        <tr>
+            <td style="white-space:nowrap;">{{ reg.fecha|date:"d/m/Y H:i:s" }}</td>
+            <td>{{ reg.usuario.username|default:"(eliminado)" }}</td>
+            <td>
+                <span class="badge-accion badge-{{ reg.accion }}">
+                    {{ reg.get_accion_display }}
+                </span>
+            </td>
+            <td>{{ reg.descripcion }}</td>
+            <td style="color:#888; font-size:.85em;">{{ reg.ip|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="texto-meta">No hay registros de actividad aún.</p>
+{% endif %}
+
+{% endblock %}

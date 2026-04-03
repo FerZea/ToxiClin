@@ -3,14 +3,19 @@ Vista del dashboard (página de inicio).
 RF-27: Muestra resumen real de la base de datos.
 """
 
+from datetime import datetime
+
 from django.shortcuts import render
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
 from django.db.models import Count
 
 from expedientes.decoradores import login_requerido
-from expedientes.models import HistoriaClinica
+from expedientes.models import HistoriaClinica, ConfigSistema
 from expedientes.graficas import grafica_linea_temporal
+
+# Días sin respaldar antes de mostrar el recordatorio (RF-33)
+DIAS_ALERTA_RESPALDO = 7
 
 
 @login_requerido
@@ -61,10 +66,27 @@ def dashboard(request):
     )
     grafica_tendencia = grafica_linea_temporal(qs_anio, titulo='Casos por mes (año actual)')
 
+    # RF-33: recordatorio de respaldo para administradoras
+    alerta_respaldo = False
+    es_admin = request.user.is_superuser or \
+               request.user.groups.filter(name='Administrador').exists()
+    if es_admin:
+        ultimo_str = ConfigSistema.get('ultimo_respaldo')
+        if ultimo_str is None:
+            alerta_respaldo = True  # nunca se ha hecho un respaldo
+        else:
+            try:
+                ultimo = datetime.fromisoformat(ultimo_str)
+                dias_sin_respaldo = (datetime.now() - ultimo).days
+                alerta_respaldo = dias_sin_respaldo >= DIAS_ALERTA_RESPALDO
+            except ValueError:
+                alerta_respaldo = True
+
     return render(request, 'expedientes/dashboard.html', {
         'total': total,
         'este_mes': este_mes,
         'top_agentes': top_agentes,
         'top_circunstancias': top_circunstancias,
         'grafica_tendencia': grafica_tendencia,
+        'alerta_respaldo': alerta_respaldo,
     })

@@ -21,3 +21,7 @@ from expedientes.models.historia import (
     HistoriaClinica,
     HistoriaClinicaTratamiento,
 )
+from expedientes.models.sistema import (
+    ConfigSistema,
+    RegistroActividad,
+)

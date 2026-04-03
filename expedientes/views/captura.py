@@ -8,7 +8,8 @@ from django.http import JsonResponse
 from expedientes.decoradores import login_requerido
 from expedientes.forms.captura import HistoriaClinicaForm
 from expedientes.models import (
-    HistoriaClinica, HistoriaClinicaTratamiento, CatCircunstanciaNivel2
+    HistoriaClinica, HistoriaClinicaTratamiento, CatCircunstanciaNivel2,
+    RegistroActividad,
 )
 
 
@@ -40,6 +41,16 @@ def nueva_historia(request):
             form.save_m2m()
             _guardar_tratamientos(historia, form)
 
+            # RF-35: registrar captura en la bitácora
+            RegistroActividad.objects.create(
+                usuario=request.user,
+                accion='captura',
+                descripcion=(
+                    f'Nueva historia #{historia.consulta_numero} — '
+                    f'Folio: {historia.folio_expediente}'
+                ),
+                ip=request.META.get('REMOTE_ADDR'),
+            )
             messages.success(
                 request,
                 f'Historia clínica #{historia.consulta_numero} guardada correctamente.'
@@ -87,6 +98,16 @@ def editar_historia(request, pk):
             historia.tratamientos_detalle.all().delete()
             _guardar_tratamientos(historia, form)
 
+            # RF-35: registrar edición en la bitácora
+            RegistroActividad.objects.create(
+                usuario=request.user,
+                accion='edicion',
+                descripcion=(
+                    f'Edición de historia #{historia.consulta_numero} — '
+                    f'Folio: {historia.folio_expediente}'
+                ),
+                ip=request.META.get('REMOTE_ADDR'),
+            )
             messages.success(request, f'Historia clínica #{historia.consulta_numero} actualizada.')
             return redirect('detalle_historia', pk=historia.pk)
         else:

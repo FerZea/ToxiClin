@@ -2,7 +2,8 @@ from django.urls import path
 from expedientes.views.auth import vista_login, vista_logout
 from expedientes.views.inicio import dashboard
 from expedientes.views.admin_custom import (
-    lista_usuarios, crear_usuario, editar_usuario, cambiar_contrasena
+    lista_usuarios, crear_usuario, editar_usuario, cambiar_contrasena,
+    respaldos, crear_respaldo, restaurar_respaldo, actividad,
 )
 from expedientes.views.captura import (
     nueva_historia, editar_historia, circunstancias_nivel2
@@ -38,4 +39,12 @@ urlpatterns = [
     # Estadísticas y gráficas (RF-22, RF-25, RF-26)
     path('estadisticas/', estadisticas, name='estadisticas'),
     path('estadisticas/exportar/', exportar_grafica, name='exportar_grafica'),
+
+    # Respaldos (RF-32)
+    path('admin-ciat/respaldos/', respaldos, name='respaldos'),
+    path('admin-ciat/respaldos/crear/', crear_respaldo, name='crear_respaldo'),
+    path('admin-ciat/respaldos/restaurar/', restaurar_respaldo, name='restaurar_respaldo'),
+
+    # Bitácora de actividad (RF-35)
+    path('admin-ciat/actividad/', actividad, name='actividad'),
 ]

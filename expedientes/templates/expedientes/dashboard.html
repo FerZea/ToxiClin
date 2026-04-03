@@ -7,6 +7,15 @@
     <h2>Bienvenido, {{ user.get_full_name|default:user.username }}</h2>
     <p class="texto-secundario">Sistema de Gestión de Expedientes Clínicos Toxicológicos — CIAT</p>
 
+    {# ── RF-33: Recordatorio de respaldo (solo admins) ──────────────────── #}
+    {% if alerta_respaldo %}
+    <div class="alerta alerta-advertencia" style="margin-bottom:1.5rem;">
+        <strong>Recordatorio:</strong> Han pasado más de 7 días desde el último respaldo
+        (o nunca se ha realizado uno).
+        <a href="{% url 'respaldos' %}" style="margin-left:.5rem;">Hacer respaldo ahora</a>
+    </div>
+    {% endif %}
+
     {# ── Tarjetas de resumen ─────────────────────────────────────────────── #}
     <div class="tarjetas-resumen">
         <div class="tarjeta">

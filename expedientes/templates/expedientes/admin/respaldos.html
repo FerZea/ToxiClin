@@ -1,0 +1,95 @@
+{% extends "expedientes/base.html" %}
+{% block titulo %}Respaldos — ToxiClin{% endblock %}
+
+{% block contenido %}
+<div class="pagina-encabezado">
+    <h1>Respaldos de base de datos</h1>
+    <p class="texto-ayuda">
+        Los respaldos se cifran con tu contraseña. Sin ella, el archivo no puede abrirse.
+        Guárdalos en un USB o lugar seguro fuera de esta computadora.
+    </p>
+</div>
+
+{% if ultimo_respaldo %}
+<p class="texto-meta">
+    Último respaldo: <strong>{{ ultimo_respaldo|date:"d/m/Y H:i" }}</strong>
+</p>
+{% else %}
+<div class="alerta alerta-advertencia">
+    Aún no se ha generado ningún respaldo. Se recomienda respaldar la base de datos regularmente.
+</div>
+{% endif %}
+
+{# ─── Generar respaldo ─────────────────────────────────────────────── #}
+<section class="tarjeta" style="max-width:520px; margin-bottom:2rem;">
+    <h2>Generar respaldo cifrado</h2>
+    <p>Se descargará un archivo <code>.toxiclin</code> cifrado con tu contraseña.</p>
+    <form method="post" action="{% url 'crear_respaldo' %}">
+        {% csrf_token %}
+        <div class="campo-form">
+            <label for="pass-backup">Tu contraseña actual</label>
+            <input type="password" id="pass-backup" name="password"
+                   placeholder="Contraseña" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primario">Descargar respaldo cifrado</button>
+    </form>
+</section>
+
+{# ─── Restaurar respaldo ───────────────────────────────────────────── #}
+<section class="tarjeta" style="max-width:520px; margin-bottom:2rem;">
+    <h2>Restaurar desde respaldo</h2>
+    <div class="alerta alerta-advertencia">
+        <strong>Advertencia:</strong> Esta acción reemplaza <em>toda</em> la base de datos actual
+        con el contenido del archivo. Los registros capturados después del respaldo se perderán.
+        Después de restaurar deberás reiniciar el servidor.
+    </div>
+    <form method="post" action="{% url 'restaurar_respaldo' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="campo-form">
+            <label for="archivo-restore">Archivo de respaldo (.toxiclin)</label>
+            <input type="file" id="archivo-restore" name="archivo" accept=".toxiclin" required>
+        </div>
+        <div class="campo-form">
+            <label for="pass-restore">Tu contraseña actual</label>
+            <input type="password" id="pass-restore" name="password"
+                   placeholder="Contraseña con la que se cifró el respaldo"
+                   required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-peligro"
+                onclick="return confirm('¿Estás segura? Esto reemplaza la base de datos completa.')">
+            Restaurar base de datos
+        </button>
+    </form>
+</section>
+
+{# ─── Historial de respaldos locales ──────────────────────────────── #}
+{% if archivos %}
+<section class="tarjeta">
+    <h2>Respaldos almacenados localmente (carpeta backups/)</h2>
+    <table class="tabla-listado">
+        <thead>
+            <tr>
+                <th>Archivo</th>
+                <th>Fecha</th>
+                <th>Tamaño</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for archivo in archivos %}
+            <tr>
+                <td><code>{{ archivo.nombre }}</code></td>
+                <td>{{ archivo.fecha|date:"d/m/Y H:i" }}</td>
+                <td>{{ archivo.tamano_kb }} KB</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="texto-ayuda" style="margin-top:.5rem;">
+        Estos archivos son copias locales. Para mayor seguridad, cópialos a un USB o disco externo.
+    </p>
+</section>
+{% else %}
+<p class="texto-meta">No hay respaldos en la carpeta <code>backups/</code>.</p>
+{% endif %}
+
+{% endblock %}

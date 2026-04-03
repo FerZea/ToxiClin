@@ -26,6 +26,8 @@
             <a href="#">Administración ▾</a>
             <ul class="navbar-dropdown-menu">
                 <li><a href="{% url 'lista_usuarios' %}">Gestión de usuarios</a></li>
+                <li><a href="{% url 'respaldos' %}">Respaldos</a></li>
+                <li><a href="{% url 'actividad' %}">Bitácora de actividad</a></li>
                 {# Admin Django solo para el superusuario técnico — no para las doctoras #}
                 {% if user.is_superuser %}
                 <li><a href="/admin/">Admin Django</a></li>

@@ -5,7 +5,9 @@
    ============================================================ */
 
 /* --- Reset básico --- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -105,13 +107,15 @@ body {
     font-size: 0.9rem;
 }
 
-.mensaje-success, .mensaje-info {
+.mensaje-success,
+.mensaje-info {
     background-color: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
 }
 
-.mensaje-error, .mensaje-danger {
+.mensaje-error,
+.mensaje-danger {
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
@@ -135,7 +139,7 @@ body {
     background: white;
     padding: 2.5rem;
     border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     width: 100%;
     max-width: 380px;
 }
@@ -193,7 +197,7 @@ body {
 .campo-grupo textarea:focus {
     outline: none;
     border-color: #1a3a5c;
-    box-shadow: 0 0 0 2px rgba(26,58,92,0.15);
+    box-shadow: 0 0 0 2px rgba(26, 58, 92, 0.15);
 }
 
 .error-login {
@@ -274,7 +278,7 @@ body {
     background: white;
     border-radius: 8px;
     padding: 1.2rem 1.5rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     min-width: 180px;
     text-align: center;
 }
@@ -356,7 +360,7 @@ body {
     background: white;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     margin-top: 1rem;
 }
 
@@ -466,7 +470,7 @@ body {
     border-radius: 8px;
     padding: 2rem;
     max-width: 700px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .formulario-contenedor h2 {
@@ -491,9 +495,6 @@ body {
     flex: 1;
 }
 
-.fila-duracion-exposicion .campo-wrapper > label {
-    min-height: 3.4rem;
-}
 
 .campo-grupo small {
     display: block;
@@ -542,7 +543,7 @@ body {
 .seccion-form {
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
     margin-bottom: 1.2rem;
     overflow: hidden;
 }
@@ -563,8 +564,13 @@ body {
 }
 
 /* Anchos relativos de campos */
-.campo-angosto { flex: 0 0 160px !important; }
-.campo-ancho   { flex: 2 !important; }
+.campo-angosto {
+    flex: 0 0 160px !important;
+}
+
+.campo-ancho {
+    flex: 2 !important;
+}
 
 /* Campo solo lectura (edad, latencia calculados) */
 .campo-readonly {
@@ -705,7 +711,7 @@ body {
     background: white;
     border-radius: 8px;
     padding: 1.2rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
     margin-bottom: 1rem;
 }
 
@@ -749,12 +755,42 @@ body {
     font-weight: bold;
 }
 
-.severidad-0 { background: #e8f5e9; color: #2e7d32; }  /* Asintomático */
-.severidad-1 { background: #fff9c4; color: #f57f17; }  /* Leve */
-.severidad-2 { background: #ffe0b2; color: #e65100; }  /* Moderada */
-.severidad-3 { background: #ffcdd2; color: #b71c1c; }  /* Severa */
-.severidad-4 { background: #4a0000; color: #ffffff; }  /* Fatal */
-.severidad-5 { background: #eeeeee; color: #555555; }  /* Sin relación */
+.severidad-0 {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Asintomático */
+.severidad-1 {
+    background: #fff9c4;
+    color: #f57f17;
+}
+
+/* Leve */
+.severidad-2 {
+    background: #ffe0b2;
+    color: #e65100;
+}
+
+/* Moderada */
+.severidad-3 {
+    background: #ffcdd2;
+    color: #b71c1c;
+}
+
+/* Severa */
+.severidad-4 {
+    background: #4a0000;
+    color: #ffffff;
+}
+
+/* Fatal */
+.severidad-5 {
+    background: #eeeeee;
+    color: #555555;
+}
+
+/* Sin relación */
 
 .tipo-agente-badge {
     font-size: 0.78rem;
@@ -868,7 +904,7 @@ body {
     background: white;
     border-radius: 8px;
     padding: 1.2rem;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
 }
 
 .detalle-seccion h3 {
@@ -1054,3 +1090,32 @@ body {
     background: #eef0f5;
     border-top: 1px solid #ddd;
 }
+/* --- Respaldos y bitácora (Fase 7) --- */
+.btn-peligro {
+    background-color: #c0392b;
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+}
+.btn-peligro:hover {
+    background-color: #a93226;
+}
+
+/* Badges de acción para la bitácora */
+.badge-accion {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 3px;
+    font-size: 0.82rem;
+    font-weight: bold;
+}
+.badge-login        { background: #d4edda; color: #155724; }
+.badge-logout       { background: #f8f9fa; color: #555; }
+.badge-captura      { background: #cce5ff; color: #004085; }
+.badge-edicion      { background: #fff3cd; color: #856404; }
+.badge-respaldo     { background: #e2d9f3; color: #4a235a; }
+.badge-restauracion { background: #f8d7da; color: #721c24; }
