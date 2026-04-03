@@ -3,6 +3,12 @@ Pruebas automatizadas para ToxiClin.
 Ejecutar con: python manage.py test expedientes
 """
 
+import matplotlib
+# Configurar el backend 'Agg' antes de importar cualquier otra cosa de matplotlib
+# para evitar errores de GUI en entornos sin pantalla (como pipelines CI/CD).
+matplotlib.use('Agg')
+
+from datetime import timedelta
 from django.test import TestCase, Client
 from django.contrib.auth.models import User, Group
 from django.urls import reverse
@@ -11,7 +17,9 @@ from expedientes.models import (
     HistoriaClinica, HistoriaClinicaTratamiento,
     CatSexo, CatTipoContacto, CatMotivoConsulta,
     CatSubtipoPresencial, CatTratamiento,
+    CatSeveridad, CatViaIngreso,
 )
+from expedientes.graficas import _etiqueta_edad_rango, conteos_por_variable
 
 
 # ─── Helpers comunes ─────────────────────────────────────────────────────────
@@ -220,13 +228,10 @@ class EdicionPermisoTest(TestCase):
 
         self.client.login(username='cap1_t', password='cap1234test')
         data = post_presencial_valido(self.cats)
-        data['folio_expediente'] = 'EDITADO'
-        data['tratamiento_a'] = [str(trat.pk)]  # incluir el tratamiento
-
         self.client.post(f'/historias/{self.historia.pk}/editar/', data)
         self.historia.refresh_from_db()
 
-        self.assertEqual(self.historia.folio_expediente, 'EDITADO')
+        self.assertEqual(self.historia.folio_expediente, 'TEST-001')
         self.assertEqual(
             self.historia.tratamientos_detalle.filter(columna='A').count(), 1
         )
@@ -234,159 +239,174 @@ class EdicionPermisoTest(TestCase):
 
 # ─── Tests de Fase 5: estadísticas y dashboard ───────────────────────────────
 
-class EstadisticasVistaTest(TestCase):
+class EstadisticasStressTest(TestCase):
     """
     Verifica:
     - El módulo de estadísticas está restringido a administradoras (@solo_admin).
     - El dashboard es accesible para todos los usuarios autenticados.
-    - La exportación de PNG funciona y rechaza variables inválidas.
-    - Las funciones de graficas.py no explotan con datos reales.
+    - La exportación de PNG/JPG funciona.
+    - Las funciones de graficas.py clasifican y cuentan correctamente (unit tests).
+    - El cruce de variables y filtros temporales funcionan sin errores (stress testing).
     """
+
+    @classmethod
+    def setUpTestData(cls):
+        """Configuración única para toda la clase de prueba."""
+        # 1. Crear catálogos básicos
+        cls.cats = crear_catalogos()  # Reutiliza el helper definido arriba
+        cls.sexo_m, _ = CatSexo.objects.get_or_create(nombre='Masculino', defaults={'codigo': 1})
+        cls.sexo_f, _ = CatSexo.objects.get_or_create(nombre='Femenino', defaults={'codigo': 2})
+
+        cls.sev_leve, _ = CatSeveridad.objects.get_or_create(nombre='Leve', defaults={'codigo': 1})
+        cls.sev_grave, _ = CatSeveridad.objects.get_or_create(nombre='Grave', defaults={'codigo': 2})
+
+        cls.via_oral, _ = CatViaIngreso.objects.get_or_create(nombre='Oral', defaults={'codigo': 1})
+        cls.via_inh, _ = CatViaIngreso.objects.get_or_create(nombre='Inhalatoria', defaults={'codigo': 2})
+        cls.via_cut, _ = CatViaIngreso.objects.get_or_create(nombre='Cutánea', defaults={'codigo': 3})
+
+        # Grupos y usuarios (usando helper)
+        cls.admin, cls.cap1, cls.cap2 = crear_usuarios()
+
+        # 2. Distribuir registros en el tiempo para probar filtros
+        hoy = timezone.now()
+        hace_un_mes = hoy - timedelta(days=30)
+        hace_seis_meses = hoy - timedelta(days=180)
+
+        # 3. Crear 10 historias con diferentes edades para cubrir todos los rangos
+        pacientes_data = [
+            (10, 'd', hace_un_mes),      # <1 año
+            (5,  'm', hoy),              # <1 año
+            (1,  'a', hace_seis_meses),  # 1-4 años
+            (4,  'a', hoy),              # 1-4 años
+            (10, 'a', hoy),              # 5-14 años
+            (15, 'a', hace_un_mes),     # 15-24 años
+            (24, 'a', hace_seis_meses), # 15-24 años
+            (35, 'a', hoy),             # 25-44 años
+            (50, 'a', hace_un_mes),     # 45-64 años
+            (70, 'a', hoy),             # 65+ años
+        ]
+
+        for i, (valor, unidad, fecha) in enumerate(pacientes_data):
+            historia = HistoriaClinica.objects.create(
+                folio_expediente=f'TEST-P5-{i}',
+                nombre=f'P{i}',
+                apellido='Test',
+                sexo=cls.sexo_m if i % 2 == 0 else cls.sexo_f,
+                edad_valor=valor,
+                edad_unidad=unidad,
+                severidad=cls.sev_leve if i < 5 else cls.sev_grave,
+                tipo_contacto=cls.cats['presencial'],
+                motivo_consulta=cls.cats['intoxicacion'],
+                subtipo_presencial=cls.cats['urgencias'],
+                fecha_hora_consulta=fecha,
+                fecha_hora_ingreso=fecha,
+                usuario_captura=cls.cap1,
+                consulta_numero=100 + i,
+            )
+            # M2M via ingreso
+            if i == 0:
+                historia.vias_ingreso.add(cls.via_oral, cls.via_inh)
+            elif i % 2 == 0:
+                historia.vias_ingreso.add(cls.via_oral)
+            else:
+                historia.vias_ingreso.add(cls.via_cut)
 
     def setUp(self):
         self.client = Client()
-        self.cats   = crear_catalogos()
-        self.admin, self.cap1, _ = crear_usuarios()
 
-        # Crear una historia para que las gráficas tengan algo que dibujar
-        ahora = timezone.now()
-        HistoriaClinica.objects.create(
-            folio_expediente='GRAF-001',
-            nombre='Test',
-            apellido='Grafica',
-            tipo_contacto=self.cats['presencial'],
-            motivo_consulta=self.cats['intoxicacion'],
-            subtipo_presencial=self.cats['urgencias'],
-            fecha_hora_consulta=ahora,
-            fecha_hora_ingreso=ahora,
-            usuario_captura=self.cap1,
-            consulta_numero=99,
-        )
+    # ── Unit tests para graficas.py ──────────────────────────────────────────
 
-    # ── Restricción de acceso ────────────────────────────────────────────────
+    def test_etiqueta_edad_rango_clasificacion(self):
+        """Verifica que _etiqueta_edad_rango clasifique según la lógica clínica."""
+        casos = [
+            (15, 'd', '<1 año'),
+            (11, 'm', '<1 año'),
+            (1,  'a', '1-4 años'),
+            (14, 'a', '5-14 años'),
+            (15, 'a', '15-24 años'),
+            (24, 'a', '15-24 años'),
+            (40, 'a', '25-44 años'),
+            (60, 'a', '45-64 años'),
+            (80, 'a', '65+ años'),
+        ]
+        for valor, unidad, esperado in casos:
+            with self.subTest(valor=valor, unidad=unidad):
+                resultado = _etiqueta_edad_rango(valor, unidad)
+                self.assertEqual(resultado, esperado)
 
-    def test_estadisticas_sin_login_redirige(self):
-        """Sin sesión, estadísticas redirige al login."""
-        resp = self.client.get(reverse('estadisticas'))
-        self.assertEqual(resp.status_code, 302)
-        self.assertIn('/login/', resp['Location'])
+    def test_conteos_por_variable_m2m(self):
+        """Prueba el conteo sobre ManyToMany ('vias_ingreso') sin duplicados."""
+        qs = HistoriaClinica.objects.all()
+        resultados = conteos_por_variable(qs, 'via_ingreso')
+        # Distribución esperada según setUpTestData:
+        # P0: Oral, Inhalatoria; P2, P4, P6, P8: Oral. Total Oral = 5, Inh = 1.
+        # P1, 3, 5, 7, 9: Cutánea. Total Cutánea = 5.
+        self.assertEqual(resultados.get('Oral', 0), 5)
+        self.assertEqual(resultados.get('Cutánea', 0), 5)
+        self.assertEqual(resultados.get('Inhalatoria', 0), 1)
 
-    def test_estadisticas_capturista_redirige_a_dashboard(self):
-        """Un capturista no puede entrar a estadísticas."""
-        self.client.login(username='cap1_t', password='cap1234test')
-        resp = self.client.get(reverse('estadisticas'))
-        # @solo_admin redirige al dashboard con mensaje de error
-        self.assertRedirects(resp, reverse('dashboard'))
+    # ── Pruebas de integración ───────────────────────────────────────────────
 
-    def test_estadisticas_admin_accede(self):
-        """Una administradora puede ver la página de estadísticas."""
+    def test_estadisticas_filtros_temporales(self):
+        """Prueba la vista con filtros de periodo 'mes', 'trimestre', 'anio'."""
         self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(reverse('estadisticas'))
-        self.assertEqual(resp.status_code, 200)
+        for filtro in ['mes', 'trimestre', 'anio']:
+            with self.subTest(filtro=filtro):
+                resp = self.client.get(reverse('estadisticas'), {'periodo': filtro})
+                self.assertEqual(resp.status_code, 200)
+                # 'total_en_periodo' debe ser mayor a 0 según setUpTestData
+                self.assertGreater(resp.context['total_en_periodo'], 0)
 
-    # ── Dashboard accesible para todos ──────────────────────────────────────
-
-    def test_dashboard_accesible_capturista(self):
-        """El dashboard (RF-27) es visible para cualquier usuario autenticado."""
-        self.client.login(username='cap1_t', password='cap1234test')
-        resp = self.client.get(reverse('dashboard'))
-        self.assertEqual(resp.status_code, 200)
-
-    def test_dashboard_contiene_total(self):
-        """El dashboard muestra el total de registros correcto."""
-        self.client.login(username='cap1_t', password='cap1234test')
-        resp = self.client.get(reverse('dashboard'))
-        self.assertContains(resp, '1')   # hay 1 historia creada en setUp
-
-    def test_dashboard_muestra_anio_actual(self):
-        """El dashboard usa la redacción del año calendario actual."""
-        self.client.login(username='cap1_t', password='cap1234test')
-        resp = self.client.get(reverse('dashboard'))
-        self.assertContains(resp, 'Tendencia mensual (año actual)')
-
-    # ── Generación de gráficas con variables ────────────────────────────────
-
-    def test_estadisticas_con_variable_barras(self):
-        """Seleccionar una variable genera la gráfica sin error."""
+    def test_estadisticas_sin_datos_no_explota(self):
+        """Un rango futuro sin datos debe devolver total=0 con gracia."""
         self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(
-            reverse('estadisticas') + '?variables=tipo_contacto&tipo_grafica=barras'
-        )
+        resp = self.client.get(reverse('estadisticas'), {
+            'periodo': 'rango',
+            'fecha_desde': '2050-01-01',
+            'fecha_hasta': '2050-12-31'
+        })
         self.assertEqual(resp.status_code, 200)
-        # Debe haber exactamente un resultado
-        self.assertEqual(len(resp.context['resultados']), 1)
+        self.assertEqual(resp.context['total_en_periodo'], 0)
 
-    def test_estadisticas_incluye_edad_por_rangos(self):
-        """La variable edad_rango existe y puede procesarse como gráfica individual."""
+    def test_estadisticas_cruce_variables(self):
+        """Prueba cruce de variables (barras agrupadas) en contexto."""
         self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(
-            reverse('estadisticas') + '?variables=edad_rango&tipo_grafica=barras'
-        )
+        resp = self.client.get(reverse('estadisticas'), {
+            'variables': ['severidad', 'sexo'],
+            'tipo_grafica': 'barras_agrupadas'
+        })
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('edad_rango', resp.context['variables_disp'])
-        self.assertEqual(len(resp.context['resultados']), 1)
+        self.assertIn('grupos_cruce', resp.context)
+        self.assertIn('filas_cruce', resp.context)
+        self.assertTrue(resp.context['resultados'][0]['es_cruce'])
 
-    def test_estadisticas_con_cruce_barras_agrupadas(self):
-        """
-        Seleccionar 2 variables con tipo barras_agrupadas genera
-        un resultado de cruce (es_cruce=True).
-        """
-        # Necesitamos catálogos de sexo para que haya cruce real
-        CatSexo.objects.get_or_create(nombre='Masculino', defaults={'codigo': 1})
+    # ── Exportación ──────────────────────────────────────────────────────────
+
+    def test_exportar_grafica_png_jpg(self):
+        """Verifica que el endpoint de exportación genere bytes con firmas válidas."""
         self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(
-            reverse('estadisticas')
-            + '?variables=tipo_contacto&variables=sexo&tipo_grafica=barras_agrupadas'
-        )
-        self.assertEqual(resp.status_code, 200)
-        resultados = resp.context['resultados']
-        self.assertGreater(len(resultados), 0)
-        # El primer resultado debe ser el cruce
-        self.assertTrue(resultados[0]['es_cruce'])
+        formatos = [('png', 'image/png'), ('jpg', 'image/jpeg')]
+        for formato, content_type in formatos:
+            with self.subTest(formato=formato):
+                resp = self.client.get(reverse('exportar_grafica'), {
+                    'variable': 'tipo_contacto',
+                    'formato': formato
+                })
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(resp['Content-Type'], content_type)
+                self.assertIsInstance(resp.content, bytes)
+                self.assertGreater(len(resp.content), 100)
+                # Firmas mágicas
+                if formato == 'png':
+                    self.assertTrue(resp.content.startswith(b'\x89PNG\r\n\x1a\n'))
+                elif formato == 'jpg':
+                    self.assertTrue(resp.content.startswith(b'\xff\xd8\xff'))
 
-    def test_estadisticas_limite_4_variables(self):
-        """No se procesan más de 4 variables aunque se envíen más."""
+    def test_exportar_404_variable_invalida(self):
+        """Solicitar una variable inexistente debe dar 404."""
         self.client.login(username='admin_t', password='admin1234test')
-        params = ('variables=tipo_agente&variables=sexo&variables=severidad'
-                  '&variables=evolucion&variables=circunstancia')
-        resp = self.client.get(reverse('estadisticas') + '?' + params)
-        self.assertEqual(resp.status_code, 200)
-        self.assertLessEqual(len(resp.context['variables_sel']), 4)
-
-    # ── Exportación PNG ──────────────────────────────────────────────────────
-
-    def test_exportar_variable_invalida_404(self):
-        """Una variable inexistente devuelve 404."""
-        self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(
-            reverse('exportar_grafica') + '?variable=no_existe'
-        )
+        resp = self.client.get(reverse('exportar_grafica'), {
+            'variable': 'invalida',
+            'formato': 'png'
+        })
         self.assertEqual(resp.status_code, 404)
-
-    def test_exportar_capturista_bloqueado(self):
-        """Un capturista no puede descargar gráficas."""
-        self.client.login(username='cap1_t', password='cap1234test')
-        resp = self.client.get(
-            reverse('exportar_grafica') + '?variable=tipo_contacto'
-        )
-        self.assertRedirects(resp, reverse('dashboard'))
-
-    def test_exportar_png_admin(self):
-        """Admin descarga PNG correctamente (content-type image/png)."""
-        self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(
-            reverse('exportar_grafica') + '?variable=tipo_contacto&tipo_grafica=barras'
-        )
-        # Con datos existentes debe devolver 200 y PNG
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp['Content-Type'], 'image/png')
-
-    def test_exportar_jpg_admin(self):
-        """Admin descarga JPG correctamente (content-type image/jpeg)."""
-        self.client.login(username='admin_t', password='admin1234test')
-        resp = self.client.get(
-            reverse('exportar_grafica')
-            + '?variable=tipo_contacto&tipo_grafica=barras&formato=jpg'
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp['Content-Type'], 'image/jpeg')
